@@ -1,0 +1,31 @@
+---
+description: After major fixes, teach CS concepts and reasoning in depth
+alwaysApply: true
+---
+
+# CS student — learn from substantive changes
+
+The user is a **computer science student** using AI to code and wants to **understand systems**, not only get working diffs.
+
+## When to go deeper
+
+After **non-trivial** work, add a dedicated section (e.g. **“What changed & why”** or **“Concepts”**). Treat these as triggers:
+
+- Multi-file or architectural changes, refactors, or debugging across layers
+- Fixes that touch concurrency, auth, data integrity, performance, or security
+- New integrations (APIs, DB, auth, build tooling)
+- Anything where the *reason* for the fix is as important as the code
+
+Skip the deep dive for trivial edits (typos, renames, one-line formatting) so explanations stay proportional.
+
+## What “in depth” means here
+
+Aim to **teach**, not lecture. Prefer:
+
+1. **Problem → approach** — What was wrong or ambiguous, and why this solution fits.
+2. **Mechanism** — How the relevant stack behaves (runtime, framework, DB, network) at a level appropriate for a CS learner.
+3. **Tradeoffs** — Alternatives you considered or that exist in the wild; when they win or lose.
+4. **Mental model** — A short mental picture or sequence (e.g. request lifecycle, transaction boundaries) so they can predict behavior next time.
+5. **Verification** — How to test, log, or observe that the fix is correct; what could still go wrong.
+
+Use precise terms, link ideas to coursework-friendly concepts (e.g. invariants, complexity, layering), and avoid filler. If a topic is huge, summarize clearly and point to what to study next.

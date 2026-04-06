@@ -1,0 +1,108 @@
+const WATCH_LATER_PLAYLIST_ID = "WL";
+const YOUTUBE_READONLY_SCOPE = "https://www.googleapis.com/auth/youtube.readonly";
+
+export { YOUTUBE_READONLY_SCOPE };
+
+type TokenResponse = {
+  access_token: string;
+  expires_in: number;
+  scope?: string;
+  token_type: string;
+};
+
+export async function refreshYoutubeAccessToken(
+  clientId: string,
+  clientSecret: string,
+  refreshToken: string,
+): Promise<string> {
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(
+      `OAuth token refresh failed (${res.status}): ${text.slice(0, 200)}`,
+    );
+  }
+
+  const data = (await res.json()) as TokenResponse;
+  if (!data.access_token) {
+    throw new Error("OAuth response missing access_token.");
+  }
+  return data.access_token;
+}
+
+export type WatchLaterItem = {
+  videoId: string;
+  title: string;
+  thumbnail: string;
+};
+
+type PlaylistItemsResponse = {
+  items?: Array<{
+    snippet?: {
+      title?: string;
+      resourceId?: { videoId?: string };
+      thumbnails?: {
+        high?: { url?: string };
+        medium?: { url?: string };
+        default?: { url?: string };
+      };
+    };
+  }>;
+  error?: { message?: string };
+};
+
+/**
+ * Fetches the latest `maxResults` entries from the authenticated user's Watch Later playlist (`WL`).
+ * Requires OAuth with `youtube.readonly` and a refresh token with that scope.
+ */
+export async function fetchWatchLaterPlaylistItems(
+  accessToken: string,
+  maxResults: number,
+): Promise<WatchLaterItem[]> {
+  const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("playlistId", WATCH_LATER_PLAYLIST_ID);
+  url.searchParams.set("maxResults", String(maxResults));
+
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    next: { revalidate: 0 },
+  });
+
+  const data = (await res.json()) as PlaylistItemsResponse;
+
+  if (!res.ok) {
+    const msg = data.error?.message ?? (await res.text()).slice(0, 200);
+    throw new Error(`YouTube playlistItems failed (${res.status}): ${msg}`);
+  }
+
+  const items: WatchLaterItem[] = [];
+  for (const row of data.items ?? []) {
+    const snippet = row.snippet;
+    const videoId = snippet?.resourceId?.videoId;
+    if (!videoId) continue;
+
+    const title = snippet?.title?.trim() || "Untitled";
+    const thumb =
+      snippet?.thumbnails?.high?.url ??
+      snippet?.thumbnails?.medium?.url ??
+      snippet?.thumbnails?.default?.url ??
+      `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+    items.push({ videoId, title, thumbnail: thumb });
+  }
+
+  return items;
+}
