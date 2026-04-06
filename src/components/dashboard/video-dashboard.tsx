@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { CATEGORIES, categoryColor } from "@/lib/categories";
 
 function dayKey(iso: string) {
   const d = new Date(iso);
@@ -54,6 +55,7 @@ export function VideoDashboard({
   watchLaterConfigured,
 }: VideoDashboardProps) {
   const [url, setUrl] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("General");
   const [videos, setVideos] = useState<DashboardVideo[]>(initialVideos);
   const [animateInIds, setAnimateInIds] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +95,7 @@ export function VideoDashboard({
     setError(null);
     setSyncMessage(null);
     startTransition(async () => {
-      const result = await saveYoutubeVideo(url);
+      const result = await saveYoutubeVideo(url, selectedCategory);
       if (!result.ok) {
         setError(result.error);
         return;
@@ -103,7 +105,7 @@ export function VideoDashboard({
       setAnimateInIds((prev) => new Set(prev).add(row.id));
       setUrl("");
     });
-  }, [url]);
+  }, [url, selectedCategory]);
 
   const handleLearnedChange = useCallback((id: string, checked: boolean) => {
     setVideos((prev) =>
@@ -126,11 +128,11 @@ export function VideoDashboard({
 
   return (
     <div className="space-y-10 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-      <header className="space-y-2">
+      <header className="space-y-3 rounded-3xl border border-white/10 bg-gradient-to-br from-fuchsia-500/15 via-violet-500/10 to-cyan-400/10 p-5 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-6">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
-          Learning dashboard
+          What IV&apos;s Watching
         </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-zinc-400">
+        <p className="max-w-2xl text-sm leading-relaxed text-zinc-300">
           Paste a YouTube link to save it with a thumbnail and title. Mark videos
           as learned as you finish them.
         </p>
@@ -140,10 +142,10 @@ export function VideoDashboard({
             variant="secondary"
             onClick={handleSyncWatchLater}
             disabled={isPending || !watchLaterConfigured}
-            className="min-h-[44px] touch-manipulation border-white/15 bg-white/[0.04] text-zinc-100 hover:bg-white/[0.08]"
+            className="min-h-[44px] touch-manipulation border-cyan-300/20 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
             title={
               watchLaterConfigured
-                ? "Import the latest 5 videos from your YouTube Watch Later playlist"
+                ? "Import up to 50 videos from your YouTube Watch Later playlist"
                 : "Configure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and YOUTUBE_REFRESH_TOKEN (see npm run youtube:oauth)"
             }
           >
@@ -162,36 +164,45 @@ export function VideoDashboard({
             </span>
           ) : null}
         </div>
-        <div
-          className={cn(
-            "mt-6 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:flex-row sm:items-stretch",
-          )}
-        >
-          <Input
-            type="url"
-            name="youtube-url"
-            inputMode="url"
-            enterKeyHint="done"
-            placeholder="https://www.youtube.com/watch?v=…"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleAdd();
-            }}
-            className="min-h-[44px] flex-1 border-white/10 bg-black/20 text-base sm:text-sm"
-            autoComplete="off"
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? "add-error" : undefined}
-          />
-          <Button
-            type="button"
-            onClick={handleAdd}
-            disabled={isPending || !url.trim()}
-            className="min-h-[44px] shrink-0 touch-manipulation sm:min-w-[7rem]"
-          >
-            <Plus className="size-4" aria-hidden />
-            Add
-          </Button>
+        <div className="mt-6 flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/20 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+            <Input
+              type="url"
+              name="youtube-url"
+              inputMode="url"
+              enterKeyHint="done"
+              placeholder="https://www.youtube.com/watch?v=…"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAdd();
+              }}
+              className="min-h-[44px] flex-1 border-white/10 bg-black/20 text-base sm:text-sm"
+              autoComplete="off"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? "add-error" : undefined}
+            />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="min-h-[44px] shrink-0 rounded-md border border-white/10 bg-black/20 px-3 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-white/20 sm:w-36"
+            >
+              {CATEGORIES.map((cat) => (
+                <option key={cat} value={cat} className="bg-zinc-900 text-zinc-100">
+                  {cat}
+                </option>
+              ))}
+            </select>
+            <Button
+              type="button"
+              onClick={handleAdd}
+              disabled={isPending || !url.trim()}
+              className="min-h-[44px] shrink-0 touch-manipulation sm:min-w-[7rem]"
+            >
+              <Plus className="size-4" aria-hidden />
+              Add
+            </Button>
+          </div>
         </div>
         {error ? (
           <p
@@ -294,6 +305,14 @@ export function VideoDashboard({
                           {video.title}
                         </a>
                       </CardTitle>
+                      <span
+                        className={cn(
+                          "mt-1.5 inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-medium",
+                          categoryColor(video.category),
+                        )}
+                      >
+                        {video.category}
+                      </span>
                     </CardHeader>
                             <CardContent className="flex flex-col gap-3 pb-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                               <Label

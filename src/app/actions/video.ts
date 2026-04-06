@@ -8,6 +8,7 @@ export type DashboardVideo = {
   url: string;
   title: string;
   thumbnail: string;
+  category: string;
   isLearned: boolean;
   createdAt: string;
 };
@@ -21,6 +22,7 @@ export async function listVideos(): Promise<DashboardVideo[]> {
         url: true,
         title: true,
         thumbnail: true,
+        category: true,
         isLearned: true,
         createdAt: true,
       },

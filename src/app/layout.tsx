@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Learning Tracker",
-    template: "%s · Learning Tracker",
+    default: "What IV's Watching",
+    template: "%s · What IV's Watching",
   },
-  description: "Track your daily learning",
+  description: "Track what you're watching and what you've learned",
 };
 
 export const viewport: Viewport = {
@@ -25,7 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
-  themeColor: "#09090b",
+  themeColor: "#0b1020",
 };
 
 export default function RootLayout({

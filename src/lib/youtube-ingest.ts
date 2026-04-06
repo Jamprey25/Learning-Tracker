@@ -13,6 +13,7 @@ export type SaveYoutubeVideoResult =
         url: string;
         title: string;
         thumbnail: string;
+        category: string;
         createdAt: string;
       };
     }
@@ -53,6 +54,8 @@ export type IngestYoutubeOptions = {
   /** When set (e.g. from YouTube Data API), skips oEmbed. */
   title?: string;
   thumbnail?: string;
+  /** Category label — must be one of the app CATEGORIES. Defaults to "General". */
+  category?: string;
   /** Override row timestamp (e.g. historical watch sessions). */
   createdAt?: Date;
 };
@@ -100,9 +103,10 @@ export async function ingestYoutubeVideo(
         url: canonicalUrl,
         title,
         thumbnail,
+        ...(opts?.category ? { category: opts.category } : {}),
         ...(opts?.createdAt ? { createdAt: opts.createdAt } : {}),
       },
-      select: { id: true, url: true, title: true, thumbnail: true, createdAt: true },
+      select: { id: true, url: true, title: true, thumbnail: true, category: true, createdAt: true },
     });
     return {
       ok: true,

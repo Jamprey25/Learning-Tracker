@@ -12,7 +12,7 @@ export type SyncWatchLaterActionResult =
  */
 export async function syncWatchLaterFromPlaylist(): Promise<SyncWatchLaterActionResult> {
   try {
-    const outcome = await runWatchLaterSync(5);
+    const outcome = await runWatchLaterSync();
     const videos = await listVideos();
     return { ok: true, result: outcome, videos };
   } catch (e) {

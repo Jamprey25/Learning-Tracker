@@ -4,7 +4,7 @@ import { runWatchLaterSync } from "@/lib/watch-later-sync";
 export const runtime = "nodejs";
 
 /**
- * POST — Pull latest Watch Later entries (default 5) into the database.
+ * POST — Pull recent Watch Later entries (default 50) into the database.
  * Secured with `Authorization: Bearer <SYNC_SECRET>` for cron jobs and scripts.
  */
 export async function POST(request: Request) {
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const outcome = await runWatchLaterSync(5);
+    const outcome = await runWatchLaterSync();
     return Response.json({ ok: true, outcome });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Sync failed.";

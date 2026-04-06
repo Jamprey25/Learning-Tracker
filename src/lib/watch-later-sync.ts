@@ -5,7 +5,7 @@ import {
   refreshYoutubeAccessToken,
 } from "@/lib/youtube-watch-later";
 
-const DEFAULT_MAX = 5;
+const DEFAULT_MAX = 50;
 
 export type WatchLaterSyncResult = {
   attempted: number;

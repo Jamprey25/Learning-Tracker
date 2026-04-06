@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { BookOpen, Video } from "lucide-react";
+import { Sparkles, Video } from "lucide-react";
 
 const links = [
-  { href: "/", label: "Home", icon: BookOpen },
+  { href: "/", label: "Home", icon: Sparkles },
   { href: "/videos", label: "Videos", icon: Video },
 ] as const;
 
@@ -12,10 +12,12 @@ export function AppNav() {
       <div className="mx-auto flex min-h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
         <Link
           href="/"
-          className="flex min-h-[44px] min-w-0 items-center gap-2 py-2 pr-1 font-semibold text-zinc-50 touch-manipulation"
+          className="group flex min-h-[44px] min-w-0 items-center gap-2 py-2 pr-1 font-semibold text-zinc-50 touch-manipulation"
         >
-          <BookOpen className="size-5 shrink-0" aria-hidden />
-          <span className="truncate sm:whitespace-normal">Learning Tracker</span>
+          <Sparkles className="size-5 shrink-0 text-fuchsia-300 transition-transform group-hover:rotate-12" aria-hidden />
+          <span className="truncate bg-gradient-to-r from-fuchsia-200 via-violet-200 to-cyan-200 bg-clip-text text-transparent sm:whitespace-normal">
+            What IV&apos;s Watching
+          </span>
         </Link>
         <nav className="flex shrink-0 items-center gap-0.5 sm:gap-1">
           {links.map(({ href, label, icon: Icon }) => (

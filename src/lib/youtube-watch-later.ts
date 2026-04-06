@@ -60,6 +60,7 @@ type PlaylistItemsResponse = {
       };
     };
   }>;
+  nextPageToken?: string;
   error?: { message?: string };
 };
 
@@ -71,37 +72,50 @@ export async function fetchWatchLaterPlaylistItems(
   accessToken: string,
   maxResults: number,
 ): Promise<WatchLaterItem[]> {
-  const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
-  url.searchParams.set("part", "snippet");
-  url.searchParams.set("playlistId", WATCH_LATER_PLAYLIST_ID);
-  url.searchParams.set("maxResults", String(maxResults));
-
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    next: { revalidate: 0 },
-  });
-
-  const data = (await res.json()) as PlaylistItemsResponse;
-
-  if (!res.ok) {
-    const msg = data.error?.message ?? (await res.text()).slice(0, 200);
-    throw new Error(`YouTube playlistItems failed (${res.status}): ${msg}`);
-  }
-
   const items: WatchLaterItem[] = [];
-  for (const row of data.items ?? []) {
-    const snippet = row.snippet;
-    const videoId = snippet?.resourceId?.videoId;
-    if (!videoId) continue;
+  const limit = Math.max(1, maxResults);
+  let pageToken: string | null = null;
 
-    const title = snippet?.title?.trim() || "Untitled";
-    const thumb =
-      snippet?.thumbnails?.high?.url ??
-      snippet?.thumbnails?.medium?.url ??
-      snippet?.thumbnails?.default?.url ??
-      `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  while (items.length < limit) {
+    const pageSize = Math.min(50, limit - items.length);
+    const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+    url.searchParams.set("part", "snippet");
+    url.searchParams.set("playlistId", WATCH_LATER_PLAYLIST_ID);
+    url.searchParams.set("maxResults", String(pageSize));
+    if (pageToken) {
+      url.searchParams.set("pageToken", pageToken);
+    }
 
-    items.push({ videoId, title, thumbnail: thumb });
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      next: { revalidate: 0 },
+    });
+
+    const data = (await res.json()) as PlaylistItemsResponse;
+
+    if (!res.ok) {
+      const msg = data.error?.message ?? "Unknown YouTube API error.";
+      throw new Error(`YouTube playlistItems failed (${res.status}): ${msg}`);
+    }
+
+    for (const row of data.items ?? []) {
+      const snippet = row.snippet;
+      const videoId = snippet?.resourceId?.videoId;
+      if (!videoId) continue;
+
+      const title = snippet?.title?.trim() || "Untitled";
+      const thumb =
+        snippet?.thumbnails?.high?.url ??
+        snippet?.thumbnails?.medium?.url ??
+        snippet?.thumbnails?.default?.url ??
+        `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+      items.push({ videoId, title, thumbnail: thumb });
+      if (items.length >= limit) break;
+    }
+
+    pageToken = data.nextPageToken ?? null;
+    if (!pageToken) break;
   }
 
   return items;
