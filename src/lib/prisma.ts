@@ -39,11 +39,13 @@ const shouldCreateClient =
   !globalForPrisma.prisma ||
   globalForPrisma.prismaConnectionString !== currentConnectionString;
 
-export const prisma = shouldCreateClient
+const prismaClient: PrismaClient = shouldCreateClient
   ? createPrismaClient()
-  : globalForPrisma.prisma;
+  : (globalForPrisma.prisma ?? createPrismaClient());
+
+export const prisma = prismaClient;
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.prisma = prismaClient;
   globalForPrisma.prismaConnectionString = currentConnectionString;
 }
