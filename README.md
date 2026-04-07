@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Learning Tracker
 
-## Getting Started
+Learning Tracker is a personal learning dashboard for saving educational videos, organizing them by category, and tracking progress as you watch.
 
-First, run the development server:
+It is built with Next.js, Prisma, and PostgreSQL (Supabase), with optional YouTube playlist sync for fast importing.
+
+## What this project does
+
+- Save YouTube videos by URL (title + thumbnail are fetched automatically)
+- Assign a category when saving (`Programming`, `Business`, etc.)
+- Mark videos as learned with a toggle
+- Browse all saved videos on `/videos` with search + category filters
+- Sync videos from a configured YouTube playlist into the database
+
+## Tech stack
+
+- Next.js (App Router)
+- React + TypeScript
+- Prisma ORM + PostgreSQL
+- Supabase-hosted Postgres
+- Tailwind CSS + Radix UI
+
+## Quick start
+
+1) Install dependencies:
+
+```bash
+npm install
+```
+
+2) Configure environment variables in `.env`:
+
+```bash
+DATABASE_URL="postgresql://..."
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+YOUTUBE_REFRESH_TOKEN="..."
+YOUTUBE_SYNC_PLAYLIST_ID="PL..." # regular playlist ID to sync from
+SYNC_SECRET="..."
+```
+
+3) Run Prisma migration:
+
+```bash
+npm run db:migrate
+```
+
+4) Start the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## YouTube sync setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Run OAuth once to get a refresh token:
 
-## Learn More
+```bash
+npm run youtube:oauth
+```
 
-To learn more about Next.js, take a look at the following resources:
+Then:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- copy the printed `YOUTUBE_REFRESH_TOKEN` into `.env`
+- set `YOUTUBE_SYNC_PLAYLIST_ID` to a playlist you own (can be private)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Note: the YouTube Data API does not reliably return Watch Later (`WL`) items, so this app syncs from a standard playlist ID.
 
-## Deploy on Vercel
+## Useful scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `npm run dev` - start development server
+- `npm run build` - production build
+- `npm run lint` - run ESLint
+- `npm run db:migrate` - create/apply Prisma migrations
+- `npm run db:push` - push schema without migrations
+- `npm run db:generate` - generate Prisma client
+- `npm run db:studio` - open Prisma Studio
+- `npm run seed:get-smarter` - seed sample learning videos
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project structure (high-level)
+
+- `src/app/(app)/page.tsx` - dashboard/home
+- `src/app/(app)/videos/page.tsx` - videos page with filters
+- `src/components/dashboard/*` - dashboard UI
+- `src/components/videos/*` - videos page client UI
+- `src/lib/watch-later-sync.ts` - playlist sync orchestration
+- `src/lib/youtube-ingest.ts` - YouTube URL ingest + DB insert
+- `prisma/schema.prisma` - DB schema
+
+## Security notes
+
+- Never commit `.env`
+- Keep `SYNC_SECRET` private (used to protect sync API route)
+- Rotate OAuth credentials/tokens if leaked
