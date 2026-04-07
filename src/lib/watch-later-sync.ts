@@ -22,12 +22,14 @@ function getEnv(): {
   clientId: string;
   clientSecret: string;
   refreshToken: string;
+  playlistId: string;
 } | null {
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
   const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN?.trim();
-  if (!clientId || !clientSecret || !refreshToken) return null;
-  return { clientId, clientSecret, refreshToken };
+  const playlistId = process.env.YOUTUBE_SYNC_PLAYLIST_ID?.trim();
+  if (!clientId || !clientSecret || !refreshToken || !playlistId) return null;
+  return { clientId, clientSecret, refreshToken, playlistId };
 }
 
 export function isWatchLaterConfigured(): boolean {
@@ -45,7 +47,7 @@ export async function runWatchLaterSync(
     return {
       ok: false,
       error:
-        "YouTube sync is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and YOUTUBE_REFRESH_TOKEN (run scripts/youtube-oauth-setup.mjs once).",
+        "YouTube sync is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, and YOUTUBE_SYNC_PLAYLIST_ID.",
     };
   }
 
@@ -55,7 +57,19 @@ export async function runWatchLaterSync(
     env.refreshToken,
   );
 
-  const items = await fetchWatchLaterPlaylistItems(accessToken, maxResults);
+  if (env.playlistId === "WL") {
+    return {
+      ok: false,
+      error:
+        "YouTube Data API does not reliably expose Watch Later (WL). Create a regular playlist (can be Private), set YOUTUBE_SYNC_PLAYLIST_ID to its playlist ID (starts with PL...), then sync again.",
+    };
+  }
+
+  const items = await fetchWatchLaterPlaylistItems(
+    accessToken,
+    env.playlistId,
+    maxResults,
+  );
 
   const result: WatchLaterSyncResult = {
     attempted: items.length,

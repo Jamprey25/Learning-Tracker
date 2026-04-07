@@ -13,7 +13,8 @@
     "db:studio": "prisma studio",
     "youtube:oauth": "node scripts/youtube-oauth-setup.mjs",
     "push:links": "node scripts/push-links-from-file.mjs",
-    "seed:get-smarter": "tsx --tsconfig tsconfig.json scripts/seed-get-smarter.ts"
+    "seed:get-smarter": "tsx --tsconfig tsconfig.json scripts/seed-get-smarter.ts",
+    "categories:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-categories.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.6.0",

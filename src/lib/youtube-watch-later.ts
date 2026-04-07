@@ -1,4 +1,3 @@
-const WATCH_LATER_PLAYLIST_ID = "WL";
 const YOUTUBE_READONLY_SCOPE = "https://www.googleapis.com/auth/youtube.readonly";
 
 export { YOUTUBE_READONLY_SCOPE };
@@ -65,11 +64,12 @@ type PlaylistItemsResponse = {
 };
 
 /**
- * Fetches the latest `maxResults` entries from the authenticated user's Watch Later playlist (`WL`).
+ * Fetches latest entries from a user-owned playlist.
  * Requires OAuth with `youtube.readonly` and a refresh token with that scope.
  */
 export async function fetchWatchLaterPlaylistItems(
   accessToken: string,
+  playlistId: string,
   maxResults: number,
 ): Promise<WatchLaterItem[]> {
   const items: WatchLaterItem[] = [];
@@ -80,7 +80,7 @@ export async function fetchWatchLaterPlaylistItems(
     const pageSize = Math.min(50, limit - items.length);
     const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
     url.searchParams.set("part", "snippet");
-    url.searchParams.set("playlistId", WATCH_LATER_PLAYLIST_ID);
+    url.searchParams.set("playlistId", playlistId);
     url.searchParams.set("maxResults", String(pageSize));
     if (pageToken) {
       url.searchParams.set("pageToken", pageToken);

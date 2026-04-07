@@ -145,8 +145,8 @@ export function VideoDashboard({
             className="min-h-[44px] touch-manipulation border-cyan-300/20 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
             title={
               watchLaterConfigured
-                ? "Import up to 50 videos from your YouTube Watch Later playlist"
-                : "Configure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and YOUTUBE_REFRESH_TOKEN (see npm run youtube:oauth)"
+                ? "Import up to 50 videos from your configured YouTube playlist"
+                : "Configure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, and YOUTUBE_SYNC_PLAYLIST_ID"
             }
           >
             <RefreshCw
@@ -157,9 +157,13 @@ export function VideoDashboard({
           </Button>
           {!watchLaterConfigured ? (
             <span className="text-xs text-zinc-500">
-              Watch Later sync needs OAuth env vars — run{" "}
+              YouTube playlist sync needs OAuth env vars — run{" "}
               <code className="rounded bg-white/10 px-1 py-0.5 text-zinc-300">
                 npm run youtube:oauth
+              </code>
+              {" "}and set{" "}
+              <code className="rounded bg-white/10 px-1 py-0.5 text-zinc-300">
+                YOUTUBE_SYNC_PLAYLIST_ID
               </code>
             </span>
           ) : null}

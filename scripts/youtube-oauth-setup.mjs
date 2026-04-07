@@ -52,7 +52,8 @@ authUrl.searchParams.set("redirect_uri", REDIRECT);
 authUrl.searchParams.set("response_type", "code");
 authUrl.searchParams.set("scope", SCOPE);
 authUrl.searchParams.set("access_type", "offline");
-authUrl.searchParams.set("prompt", "consent");
+// Force account chooser to avoid silently reusing the wrong signed-in account.
+authUrl.searchParams.set("prompt", "consent select_account");
 
 const server = createServer(async (req, res) => {
   if (!req.url?.startsWith("/oauth2callback")) {

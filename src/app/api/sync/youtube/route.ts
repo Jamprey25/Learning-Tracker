@@ -4,7 +4,7 @@ import { runWatchLaterSync } from "@/lib/watch-later-sync";
 export const runtime = "nodejs";
 
 /**
- * POST — Pull recent Watch Later entries (default 50) into the database.
+ * POST — Pull recent configured playlist entries (default 50) into the database.
  * Secured with `Authorization: Bearer <SYNC_SECRET>` for cron jobs and scripts.
  */
 export async function POST(request: Request) {
