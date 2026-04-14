@@ -1,0 +1,30 @@
+---
+description: Keep TECHNICAL.md complete and continuously updated
+alwaysApply: true
+---
+
+# Technical Documentation Governance
+
+`TECHNICAL.md` is a required project artifact and must stay synchronized with code.
+
+## Mandatory updates
+
+For every non-trivial code change, update `TECHNICAL.md` in the same task if any of these changed:
+- system architecture, data flow, or module boundaries
+- API routes, server actions, request/response contracts, or auth rules
+- database schema, migrations, or persistence behavior
+- environment variables, scripts, tooling, or runtime/build configuration
+- file responsibilities in `src`, `scripts`, `prisma`, or config roots
+
+## Required behavior
+
+- Keep `TECHNICAL.md` as the canonical full technical structure document.
+- Ensure the "Source Structure and Responsibilities" section reflects current files.
+- Update "Last updated" date whenever technical content changes.
+- If no technical impact exists, explicitly state that no `TECHNICAL.md` update was needed.
+
+## Quality bar
+
+- Prefer concrete, implementation-level details over marketing descriptions.
+- Preserve security notes and operational invariants.
+- Keep documentation internally consistent with actual code paths.

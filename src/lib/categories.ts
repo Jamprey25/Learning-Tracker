@@ -27,3 +27,21 @@ const COLOR_MAP: Record<Category, string> = {
 export function categoryColor(category: string): string {
   return COLOR_MAP[category as Category] ?? "bg-zinc-500/20 text-zinc-400";
 }
+
+type GlowColor = "default" | "blue" | "violet" | "emerald" | "amber" | "pink" | "cyan";
+
+const GLOW_MAP: Record<Category, GlowColor> = {
+  General:     "default",
+  Programming: "blue",
+  Mathematics: "violet",
+  Science:     "emerald",
+  Language:    "amber",
+  History:     "amber",
+  Design:      "pink",
+  Business:    "cyan",
+  Other:       "default",
+};
+
+export function categoryGlow(category: string): GlowColor {
+  return GLOW_MAP[category as Category] ?? "default";
+}

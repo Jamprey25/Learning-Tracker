@@ -15,9 +15,11 @@
     "youtube:oauth": "node scripts/youtube-oauth-setup.mjs",
     "push:links": "node scripts/push-links-from-file.mjs",
     "seed:get-smarter": "tsx --tsconfig tsconfig.json scripts/seed-get-smarter.ts",
-    "categories:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-categories.ts"
+    "categories:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-categories.ts",
+    "obsidian:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-obsidian-notes.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.88.0",
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "@radix-ui/react-label": "^2.1.8",
@@ -33,7 +35,8 @@
     "pg": "^8.20.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "undici": "^8.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -2,6 +2,7 @@
 
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { createObsidianNote } from "@/lib/obsidian";
 
 export type DashboardVideo = {
   id: string;
@@ -47,10 +48,20 @@ export async function setVideoLearned(
   isLearned: boolean,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    await prisma.video.update({
+    const video = await prisma.video.update({
       where: { id },
       data: { isLearned },
+      select: { title: true, url: true, category: true },
     });
+
+    if (isLearned) {
+      try {
+        await createObsidianNote(video);
+      } catch (err) {
+        console.warn("[setVideoLearned] Obsidian note creation failed:", err);
+      }
+    }
+
     return { ok: true };
   } catch {
     return { ok: false, error: "Could not update video." };
