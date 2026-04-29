@@ -193,7 +193,7 @@ export function VideoDashboard({
             className="min-h-[44px] touch-manipulation border-cyan-300/20 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
             title={
               watchLaterConfigured
-                ? "Import up to 50 videos from your configured YouTube playlist"
+                ? "Scan your playlist for new videos (default up to 2000 positions; set YOUTUBE_SYNC_MAX_RESULTS to raise the cap)"
                 : "Configure GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, and YOUTUBE_SYNC_PLAYLIST_ID"
             }
           >

@@ -5,7 +5,23 @@ import {
   refreshYoutubeAccessToken,
 } from "@/lib/youtube-watch-later";
 
-const DEFAULT_MAX = 50;
+/** Default cap on how many playlist positions we walk (YouTube often appends new saves at the end). */
+const DEFAULT_MAX = 2000;
+const ABSOLUTE_MAX = 5000;
+
+function resolvedSyncMaxResults(explicit?: number): number {
+  if (explicit != null && Number.isFinite(explicit) && explicit > 0) {
+    return Math.min(Math.floor(explicit), ABSOLUTE_MAX);
+  }
+  const raw = process.env.YOUTUBE_SYNC_MAX_RESULTS?.trim();
+  if (raw) {
+    const n = Number.parseInt(raw, 10);
+    if (Number.isFinite(n) && n > 0) {
+      return Math.min(n, ABSOLUTE_MAX);
+    }
+  }
+  return DEFAULT_MAX;
+}
 
 export type WatchLaterSyncResult = {
   attempted: number;
@@ -37,11 +53,14 @@ export function isWatchLaterConfigured(): boolean {
 }
 
 /**
- * Pulls the latest N videos from Watch Later and inserts any that are not already in the DB.
+ * Walks the configured playlist in order (up to a capped number of entries) and inserts
+ * videos not already in the DB. New saves are often appended at the end, so the cap must
+ * cover enough positions to reach them.
  */
 export async function runWatchLaterSync(
-  maxResults: number = DEFAULT_MAX,
+  maxResults?: number,
 ): Promise<WatchLaterSyncOutcome> {
+  const limit = resolvedSyncMaxResults(maxResults);
   const env = getEnv();
   if (!env) {
     return {
@@ -68,7 +87,7 @@ export async function runWatchLaterSync(
   const items = await fetchWatchLaterPlaylistItems(
     accessToken,
     env.playlistId,
-    maxResults,
+    limit,
   );
 
   const result: WatchLaterSyncResult = {

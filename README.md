@@ -68,6 +68,8 @@ Then:
 
 Note: the YouTube Data API does not reliably return Watch Later (`WL`) items, so this app syncs from a standard playlist ID.
 
+Sync walks the playlist from the start up to a limit (default **2000** entries) so videos you add at the **end** of a long list are included. Optional: `YOUTUBE_SYNC_MAX_RESULTS=3000` in `.env` (max 5000).
+
 ## Useful scripts
 
 - `npm run dev` - start development server

@@ -1,6 +1,6 @@
 # Learning Tracker - Technical Structure
 
-Last updated: 2026-04-13
+Last updated: 2026-04-29
 
 ## 1) System Overview
 
@@ -57,9 +57,11 @@ Key invariant:
 1. Triggered from dashboard action or secured API endpoint.
 2. `runWatchLaterSync` validates env configuration.
 3. OAuth access token refreshed with refresh token.
-4. Playlist items fetched from YouTube Data API (`playlistItems`).
+4. Playlist items fetched from YouTube Data API (`playlistItems`) in **playlist order**, paginating until the configured max item count or the playlist ends.
 5. Each item ingested through shared `ingestYoutubeVideo` pipeline.
 6. Outcome returns attempted/added/skipped/errors summary.
+
+**Invariant / gotcha:** YouTube usually places newly saved videos at the **end** of a playlist. The sync only considers the first *N* positions (default 2000, hard cap 5000). If *N* is smaller than the playlist length, items beyond position *N* are never seen—previously the default was 50, which missed new tail additions on longer playlists.
 
 ### 4.4 Bulk URL Import Flow
 1. `scripts/push-links-from-file.mjs` reads URL list from a text file.
@@ -90,6 +92,9 @@ Required for playlist sync:
 - `GOOGLE_CLIENT_SECRET`
 - `YOUTUBE_REFRESH_TOKEN`
 - `YOUTUBE_SYNC_PLAYLIST_ID` (must be regular playlist id, not `WL`)
+
+Optional for playlist sync:
+- `YOUTUBE_SYNC_MAX_RESULTS` — max playlist positions to scan per sync (default `2000`, clamped to `5000`). Raise if your playlist is longer and new saves sit near the end.
 
 Required for secured route/script automation:
 - `SYNC_SECRET`
