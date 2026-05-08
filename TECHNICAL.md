@@ -1,6 +1,6 @@
 # Learning Tracker - Technical Structure
 
-Last updated: 2026-04-29
+Last updated: 2026-05-08
 
 ## 1) System Overview
 
@@ -72,6 +72,12 @@ Key invariant:
 
 - Google OAuth token endpoint:
   - Used for refresh token exchange and access-token refresh.
+
+**OAuth `invalid_grant` (token expired or revoked):** The refresh flow in `src/lib/youtube-watch-later.ts` posts `YOUTUBE_REFRESH_TOKEN` to Google; a 400 with `invalid_grant` means Google no longer accepts that refresh token. Common causes:
+- **OAuth consent screen in “Testing”:** Google invalidates refresh tokens after about **seven days** unless the signing-in Google account is listed under **Test users** (still subject to testing limits) or you **publish** the app to production (Scopes like `youtube.readonly` typically do not require verification for personal/Google-account use—check current Google Cloud policy for your project).
+- **User revoked access** (Google Account → Security → Third-party access) or removed the Learning Tracker OAuth client’s access.
+- **Client credential mismatch:** Rotating **`GOOGLE_CLIENT_SECRET`** or switching to a **different OAuth client ID** invalidates tokens issued under the previous client pair.
+Remediation: Fix the consent-screen / credential issue in Google Cloud Console, then run **`npm run youtube:oauth`** (see `scripts/youtube-oauth-setup.mjs`), replace **`YOUTUBE_REFRESH_TOKEN`** in `.env`, and redeploy/restart so the runtime picks up the new value.
 - YouTube Data API:
   - `playlistItems` for playlist ingestion
   - `search` in seeding script

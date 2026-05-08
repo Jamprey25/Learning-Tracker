@@ -68,6 +68,8 @@ Then:
 
 Note: the YouTube Data API does not reliably return Watch Later (`WL`) items, so this app syncs from a standard playlist ID.
 
+If sync fails with **`invalid_grant` / token expired or revoked**, your Google Cloud **OAuth consent screen** may still be in **Testing** (refresh tokens expire after ~7 days for accounts that are not test users). Publish the app to production or re-run **`npm run youtube:oauth`** after fixing consent settings—see **TECHNICAL.md** §5 for causes (revoked access, rotated client secret, wrong client).
+
 Sync walks the playlist from the start up to a limit (default **2000** entries) so videos you add at the **end** of a long list are included. Optional: `YOUTUBE_SYNC_MAX_RESULTS=3000` in `.env` (max 5000).
 
 ## Useful scripts
