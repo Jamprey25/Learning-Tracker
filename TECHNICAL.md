@@ -1,6 +1,6 @@
 # Learning Tracker - Technical Structure
 
-Last updated: 2026-05-08
+Last updated: 2026-05-22
 
 ## 1) System Overview
 
@@ -35,8 +35,50 @@ Primary model (`prisma/schema.prisma`):
   - `isLearned: Boolean` default `false`
   - `createdAt: DateTime` default `now()`, mapped to `created_at`
 
-Key invariant:
+Additional gamification models:
+
+- `ProgressEvent`
+  - `id: String` UUID primary key
+  - `entityType: String` shared domain key (`"video" | "course" | "course_module" | "project" | "milestone" | "venture" | "research"`)
+  - `entityId: String` referenced entity row id
+  - `eventType: String` progress semantic (`"saved" | "completed" | "progressed" | "shipped" | ...`)
+  - `xp: Int` XP awarded for the event
+  - `note: String?` optional freeform annotation
+  - `occurredAt: DateTime` default `now()`, mapped to `occurred_at`
+  - Indexes: `[occurredAt]`, `[entityType, entityId]`
+
+- `Streak`
+  - Singleton-style table used as streak state
+  - `currentCount: Int` mapped to `current_count`
+  - `longestCount: Int` mapped to `longest_count`
+  - `lastEventDate: DateTime?` mapped to `last_event_date`
+
+- `Course`
+  - `id: String` UUID primary key
+  - `title: String`
+  - `provider: String?` optional source/platform
+  - `url: String?` optional external course URL
+  - `totalModules: Int` default `1`, mapped to `total_modules`
+  - `completedModules: Int` default `0`, mapped to `completed_modules`
+  - `status: String` default `"active"` (`active` | `completed` | `paused` | `dropped`)
+  - `category: String` default `"General"`
+  - `startedAt: DateTime` default `now()`, mapped to `started_at`
+  - `targetCompletionDate: DateTime?` mapped to `target_completion_date`
+  - `completedAt: DateTime?` mapped to `completed_at`
+  - Relation: one-to-many with `CourseModule`
+
+- `CourseModule`
+  - `id: String` UUID primary key
+  - `courseId: String` mapped to `course_id`
+  - `title: String`
+  - `orderIndex: Int` mapped to `order_index`
+  - `completedAt: DateTime?` mapped to `completed_at`
+  - Relation: belongs to `Course` with cascade delete
+  - Index: `[courseId]`
+
+Key invariants:
 - One logical YouTube video maps to one DB row because URLs are normalized to `https://www.youtube.com/watch?v=<videoId>`.
+- Progress/streak updates run transactionally via `recordProgressEvent` so event write and streak mutation stay consistent.
 
 ## 4) Application Flows
 
@@ -63,10 +105,42 @@ Key invariant:
 
 **Invariant / gotcha:** YouTube usually places newly saved videos at the **end** of a playlist. The sync only considers the first *N* positions (default 2000, hard cap 5000). If *N* is smaller than the playlist length, items beyond position *N* are never seen—previously the default was 50, which missed new tail additions on longer playlists.
 
-### 4.4 Bulk URL Import Flow
+### 4.4 Progress Event + Streak Flow
+1. Mutations that represent learning progress call `recordProgressEvent` (`src/lib/progress.ts`).
+2. `recordProgressEvent` inserts one `ProgressEvent` row and updates the singleton `Streak` row in the same transaction.
+3. Streak update semantics:
+   - If last event day is **today**: no streak increment.
+   - If last event day is **yesterday**: increment current streak.
+   - If last event day is older than yesterday (or empty): reset current streak to `1`.
+4. `longestCount` updates when `currentCount` exceeds prior max.
+5. Dashboard home route preloads streak and 84-day activity to render streak/weekly/heatmap widgets.
+
+### 4.5 Video Progress Event Emission
+1. `ingestYoutubeVideo` emits `saved` events (`xp: 1`) on successful inserts.
+2. `setVideoLearned` emits `completed` events (`xp: 5`) only on `false -> true` transitions.
+3. `true -> false` toggles intentionally do not emit any progress event.
+
+### 4.6 Bulk URL Import Flow
 1. `scripts/push-links-from-file.mjs` reads URL list from a text file.
 2. Script posts URLs to `/api/videos/import` with `Bearer SYNC_SECRET`.
 3. Route ingests each URL and returns grouped results.
+
+### 4.7 Course Progress Update Flow
+1. Client calls `updateCourseProgress` from the courses page with an explicit completed module count.
+2. Action normalizes the module count into `[0, totalModules]` using `src/lib/course-progress.ts`.
+3. Status transitions to `completed` when count reaches total; otherwise completed courses are reopened to `active`.
+4. A `course` `completed` ProgressEvent (+25 XP) emits only on transition into completed status.
+
+### 4.8 Course Module Completion Flow
+1. Client (or future module UI) calls `completeCourseModule` for one `CourseModule` row.
+2. Action transactionally marks the module complete, recomputes completed module count, and updates parent `Course`.
+3. Emits `course_module` `progressed` ProgressEvent (+3 XP) only when the module flips incomplete -> complete.
+4. If the parent course transitions to completed in that transaction, emits one additional `course` `completed` event (+25 XP).
+
+### 4.9 Courses Dashboard Integration
+1. Home route loads `listActiveCourses(3)` in parallel with videos and streak/activity metrics.
+2. Dashboard renders an "Active Courses" widget showing top 3 active courses and progress bars.
+3. Top navigation includes a `/courses` route for dedicated course management.
 
 ## 5) External Integrations
 
@@ -116,11 +190,13 @@ Optional script-specific:
 - `src/app/globals.css`: global styling
 - `src/app/(app)/layout.tsx`: authenticated/app shell container + nav wrapper
 - `src/app/(app)/loading.tsx`: app-level loading boundary UI
-- `src/app/(app)/page.tsx`: dashboard route, loads initial video data
+- `src/app/(app)/page.tsx`: dashboard route, loads video + streak/activity + active courses data
 - `src/app/(app)/videos/page.tsx`: videos index route, server-loaded list
+- `src/app/(app)/courses/page.tsx`: courses index route, server-loaded list
 
 ### Actions and API
-- `src/app/actions/video.ts`: list + update learned state
+- `src/app/actions/video.ts`: list + update learned state + learned completion event emission
+- `src/app/actions/course.ts`: list/add/update course progress/status + module completion actions with XP emission
 - `src/app/actions/youtube.ts`: URL save server action
 - `src/app/actions/sync.ts`: dashboard sync action orchestration
 - `src/app/api/sync/youtube/route.ts`: secured sync endpoint (cron/script-safe)
@@ -128,6 +204,8 @@ Optional script-specific:
 
 ### Domain/Integration libs
 - `src/lib/prisma.ts`: Prisma client + PG adapter + pool config
+- `src/lib/progress.ts`: canonical progress event writes + streak + activity aggregation queries
+- `src/lib/course-progress.ts`: course status + module count normalization helpers
 - `src/lib/youtube.ts`: YouTube URL parsing/canonicalization primitives
 - `src/lib/youtube-ingest.ts`: canonical ingest pipeline + dedupe + persistence
 - `src/lib/youtube-watch-later.ts`: OAuth refresh + playlist API client
@@ -138,9 +216,15 @@ Optional script-specific:
 - `src/lib/utils.ts`: UI utility helpers
 
 ### UI components
-- `src/components/layout/app-nav.tsx`: top navigation bar
-- `src/components/dashboard/video-dashboard.tsx`: dashboard client logic + add/sync/toggle
+- `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/courses)
+- `src/components/dashboard/video-dashboard.tsx`: dashboard client logic + add/sync/toggle + gamification summary widgets + active courses
+- `src/components/dashboard/streak-card.tsx`: streak metric card
+- `src/components/dashboard/weekly-summary.tsx`: rolling 7-day event and XP summary card
+- `src/components/dashboard/activity-heatmap.tsx`: 84-day GitHub-style activity heatmap
 - `src/components/videos/videos-client.tsx`: searchable/filterable videos grid
+- `src/components/courses/add-course-form.tsx`: quick add form for course metadata and module target
+- `src/components/courses/course-card.tsx`: per-course progress card with inline module controls
+- `src/components/courses/courses-client.tsx`: searchable/filterable courses view with optimistic updates
 - `src/components/ui/*`: reusable UI primitives
 
 ### Scripts and data

@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Sparkles, Video } from "lucide-react";
+import { GraduationCap, Sparkles, Video } from "lucide-react";
 
 const links = [
   { href: "/", label: "Home", icon: Sparkles },
   { href: "/videos", label: "Videos", icon: Video },
+  { href: "/courses", label: "Courses", icon: GraduationCap },
 ] as const;
 
 export function AppNav() {

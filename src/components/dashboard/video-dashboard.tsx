@@ -10,10 +10,12 @@ import {
   Sparkles,
   Flame,
   LibraryBig,
+  GraduationCap,
 } from "lucide-react";
 
 import { saveYoutubeVideo } from "@/app/actions/youtube";
 import { syncWatchLaterFromPlaylist } from "@/app/actions/sync";
+import type { DashboardCourse } from "@/app/actions/course";
 import { setVideoLearned, type DashboardVideo } from "@/app/actions/video";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,9 @@ import { Switch } from "@/components/ui/switch";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { cn } from "@/lib/utils";
 import { CATEGORIES, categoryColor, categoryGlow } from "@/lib/categories";
+import { StreakCard } from "@/components/dashboard/streak-card";
+import { WeeklySummary } from "@/components/dashboard/weekly-summary";
+import { ActivityHeatmap } from "@/components/dashboard/activity-heatmap";
 
 function dayKey(iso: string) {
   const d = new Date(iso);
@@ -55,11 +60,30 @@ function groupVideosByDay(videos: DashboardVideo[]) {
 type VideoDashboardProps = {
   initialVideos: DashboardVideo[];
   watchLaterConfigured: boolean;
+  streak: {
+    current: number;
+    longest: number;
+    lastEventDate: string | null;
+  };
+  weeklySummary: {
+    eventCount: number;
+    xpTotal: number;
+  };
+  activityByDay: Array<{
+    date: string;
+    count: number;
+    xp: number;
+  }>;
+  activeCourses: DashboardCourse[];
 };
 
 export function VideoDashboard({
   initialVideos,
   watchLaterConfigured,
+  streak,
+  weeklySummary,
+  activityByDay,
+  activeCourses,
 }: VideoDashboardProps) {
   const [url, setUrl] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("General");
@@ -138,6 +162,74 @@ export function VideoDashboard({
 
   return (
     <div className="space-y-10 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <div className="lg:col-span-3">
+          <StreakCard current={streak.current} longest={streak.longest} />
+        </div>
+        <div className="lg:col-span-3">
+          <WeeklySummary
+            eventCount={weeklySummary.eventCount}
+            xpTotal={weeklySummary.xpTotal}
+          />
+        </div>
+        <div className="lg:col-span-6">
+          <ActivityHeatmap activity={activityByDay} />
+        </div>
+      </section>
+
+
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-[0_14px_40px_rgba(0,0,0,0.28)]">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-200">
+            <GraduationCap className="size-4 text-cyan-200" aria-hidden />
+            Active Courses
+          </h2>
+          <span className="text-xs text-zinc-500">Top {Math.max(activeCourses.length, 1)}</span>
+        </div>
+
+        {activeCourses.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-3 py-4 text-sm text-zinc-500">
+            No active courses yet. Add one from the courses page.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {activeCourses.map((course) => {
+              const total = Math.max(1, course.totalModules);
+              const completed = Math.max(0, Math.min(course.completedModules, total));
+              const percent = Math.round((completed / total) * 100);
+
+              return (
+                <article
+                  key={course.id}
+                  className="rounded-xl border border-white/10 bg-black/20 p-3"
+                >
+                  <p className="line-clamp-2 text-sm font-semibold text-zinc-100">
+                    {course.title}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {course.provider || "Self-paced"} · {course.category}
+                  </p>
+                  <div className="mt-3">
+                    <div className="mb-1 flex items-center justify-between text-xs text-zinc-400">
+                      <span>Progress</span>
+                      <span>
+                        {completed}/{total}
+                      </span>
+                    </div>
+                    <div className="relative h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-cyan-500 to-fuchsia-500"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-fuchsia-500/15 via-violet-500/10 to-cyan-400/10 p-5 shadow-[0_24px_72px_rgba(0,229,255,0.08)] ring-1 ring-white/8 backdrop-blur-xl sm:p-6">
         <div className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full bg-fuchsia-500/15 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-20 size-56 rounded-full bg-cyan-400/10 blur-3xl" />

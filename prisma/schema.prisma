@@ -23,3 +23,49 @@ model Video {
 
   @@map("videos")
 }
+
+model ProgressEvent {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  eventType  String
+  xp         Int      @default(0)
+  note       String?
+  occurredAt DateTime @default(now()) @map("occurred_at")
+
+  @@index([occurredAt])
+  @@index([entityType, entityId])
+}
+
+model Streak {
+  id            String    @id @default(uuid())
+  currentCount  Int       @default(0) @map("current_count")
+  longestCount  Int       @default(0) @map("longest_count")
+  lastEventDate DateTime? @map("last_event_date")
+}
+
+model Course {
+  id                   String       @id @default(uuid())
+  title                String
+  provider             String?
+  url                  String?
+  totalModules         Int          @default(1) @map("total_modules")
+  completedModules     Int          @default(0) @map("completed_modules")
+  status               String       @default("active")
+  category             String       @default("General")
+  startedAt            DateTime     @default(now()) @map("started_at")
+  targetCompletionDate DateTime?    @map("target_completion_date")
+  completedAt          DateTime?    @map("completed_at")
+  modules              CourseModule[]
+}
+
+model CourseModule {
+  id          String    @id @default(uuid())
+  courseId    String    @map("course_id")
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  orderIndex  Int       @map("order_index")
+  completedAt DateTime? @map("completed_at")
+
+  @@index([courseId])
+}

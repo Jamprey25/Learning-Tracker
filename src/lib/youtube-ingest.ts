@@ -1,5 +1,6 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { recordProgressEvent } from "@/lib/progress";
 import {
   canonicalYoutubeWatchUrl,
   extractYoutubeVideoId,
@@ -107,6 +108,13 @@ export async function ingestYoutubeVideo(
         ...(opts?.createdAt ? { createdAt: opts.createdAt } : {}),
       },
       select: { id: true, url: true, title: true, thumbnail: true, category: true, createdAt: true },
+    });
+
+    await recordProgressEvent({
+      entityType: "video",
+      entityId: video.id,
+      eventType: "saved",
+      xp: 1,
     });
     return {
       ok: true,

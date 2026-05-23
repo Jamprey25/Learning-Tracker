@@ -2,6 +2,7 @@
 
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { recordProgressEvent } from "@/lib/progress";
 import { createObsidianNote } from "@/lib/obsidian";
 
 export type DashboardVideo = {
@@ -48,13 +49,33 @@ export async function setVideoLearned(
   isLearned: boolean,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
+    const existing = await prisma.video.findUnique({
+      where: { id },
+      select: { isLearned: true, title: true, url: true, category: true },
+    });
+
+    if (!existing) {
+      return { ok: false, error: "Video not found." };
+    }
+
+    if (existing.isLearned === isLearned) {
+      return { ok: true };
+    }
+
     const video = await prisma.video.update({
       where: { id },
       data: { isLearned },
       select: { title: true, url: true, category: true },
     });
 
-    if (isLearned) {
+    if (!existing.isLearned && isLearned) {
+      await recordProgressEvent({
+        entityType: "video",
+        entityId: id,
+        eventType: "completed",
+        xp: 5,
+      });
+
       try {
         await createObsidianNote(video);
       } catch (err) {
