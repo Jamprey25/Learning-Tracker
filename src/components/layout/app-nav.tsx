@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { GraduationCap, Sparkles, Video } from "lucide-react";
+import { FolderKanban, GraduationCap, Sparkles, Video } from "lucide-react";
 
 const links = [
   { href: "/", label: "Home", icon: Sparkles },
   { href: "/videos", label: "Videos", icon: Video },
   { href: "/courses", label: "Courses", icon: GraduationCap },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
 ] as const;
 
 export function AppNav() {

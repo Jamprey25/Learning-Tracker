@@ -170,6 +170,12 @@ Key invariants:
 4. Milestone reordering validates exact milestone membership for a project before applying new `orderIndex` values to preserve ordering integrity.
 5. `updateProjectStatus` includes a deferred `// TODO: v2` hook point for future GitHub commit auto-fetch integration after shipping.
 
+### 4.11 Projects UI Flow
+1. `/projects` server route loads projects via `listProjects()` and renders a client board.
+2. The client groups projects by status (`planning`, `active`, `shipped`, `shelved`) for a kanban-style workflow.
+3. Project cards allow inline status transitions, milestone add/complete operations, and local milestone reordering.
+4. All project card mutations call server actions in `src/app/actions/project.ts`, then reconcile local optimistic state with server responses.
+
 ## 5) External Integrations
 
 - Google OAuth token endpoint:
@@ -221,6 +227,7 @@ Optional script-specific:
 - `src/app/(app)/page.tsx`: dashboard route, loads video + streak/activity + active courses data
 - `src/app/(app)/videos/page.tsx`: videos index route, server-loaded list
 - `src/app/(app)/courses/page.tsx`: courses index route, server-loaded list
+- `src/app/(app)/projects/page.tsx`: projects route, server-loaded list for status-board rendering
 
 ### Actions and API
 - `src/app/actions/video.ts`: list + update learned state + learned completion event emission
@@ -246,6 +253,7 @@ Optional script-specific:
 
 ### UI components
 - `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/courses)
+- `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/courses/projects)
 - `src/components/dashboard/video-dashboard.tsx`: dashboard client logic + add/sync/toggle + gamification summary widgets + active courses
 - `src/components/dashboard/streak-card.tsx`: streak metric card
 - `src/components/dashboard/weekly-summary.tsx`: rolling 7-day event and XP summary card
@@ -254,6 +262,9 @@ Optional script-specific:
 - `src/components/courses/add-course-form.tsx`: quick add form for course metadata and module target
 - `src/components/courses/course-card.tsx`: per-course progress card with inline module controls
 - `src/components/courses/courses-client.tsx`: searchable/filterable courses view with optimistic updates
+- `src/components/projects/project-detail.tsx`: milestone list/add/reorder and completion controls per project
+- `src/components/projects/project-card.tsx`: project-level status controls + embedded milestone detail
+- `src/components/projects/projects-client.tsx`: status-board grouping, add-project form, and optimistic project/milestone mutations
 - `src/components/ui/*`: reusable UI primitives
 
 ### Scripts and data

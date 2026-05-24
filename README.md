@@ -11,6 +11,7 @@ It is built with Next.js, Prisma, and PostgreSQL (Supabase), with optional YouTu
 - Mark videos as learned with a toggle
 - Browse all saved videos on `/videos` with search + category filters
 - Track courses on `/courses` with module progress bars, status, and inline +/- progress controls
+- Manage coding projects on `/projects` with status lanes and milestone checkoffs
 - Surface top active courses on the home dashboard
 - Sync videos from a configured YouTube playlist into the database
 
@@ -90,9 +91,11 @@ Sync walks the playlist from the start up to a limit (default **2000** entries) 
 - `src/app/(app)/page.tsx` - dashboard/home
 - `src/app/(app)/videos/page.tsx` - videos page with filters
 - `src/app/(app)/courses/page.tsx` - courses page with add + progress controls
+- `src/app/(app)/projects/page.tsx` - projects board with milestone workflows
 - `src/components/dashboard/*` - dashboard UI (streak, heatmap, active courses)
 - `src/components/videos/*` - videos page client UI
 - `src/components/courses/*` - courses page client UI
+- `src/components/projects/*` - projects board and milestone management UI
 - `src/lib/watch-later-sync.ts` - playlist sync orchestration
 - `src/lib/youtube-ingest.ts` - YouTube URL ingest + DB insert
 - `prisma/schema.prisma` - DB schema

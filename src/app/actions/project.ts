@@ -4,8 +4,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordProgressEvent } from "@/lib/progress";
 
-export const PROJECT_STATUSES = ["planning", "active", "shipped", "shelved"] as const;
-export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+const PROJECT_STATUSES = ["planning", "active", "shipped", "shelved"] as const;
+type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export type DashboardMilestone = {
   id: string;
