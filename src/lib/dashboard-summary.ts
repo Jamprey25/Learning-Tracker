@@ -12,6 +12,7 @@ import { getStreak, getXpTotal } from "@/lib/progress";
 
 export type HydratedProgressEvent = ProgressEvent & {
   entityTitle: string | null;
+  relativeTimeLabel: string;
 };
 
 export type DashboardSummary = {
@@ -109,10 +110,25 @@ function hydrateEvents(
   events: ProgressEvent[],
   tables: EntityTitleTables,
 ): HydratedProgressEvent[] {
+  const now = Date.now();
+
+  function toRelativeTimeLabel(occurredAt: Date): string {
+    const diffMs = now - occurredAt.getTime();
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    if (diffMs < hour) return `${Math.max(1, Math.floor(diffMs / minute))}m ago`;
+    if (diffMs < day) return `${Math.floor(diffMs / hour)}h ago`;
+    if (diffMs < day * 7) return `${Math.floor(diffMs / day)}d ago`;
+    return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(
+      occurredAt,
+    );
+  }
+
   return events.map((event) => {
     const entityType = event.entityType as keyof EntityTitleTables;
     const entityTitle = tables[entityType]?.get(event.entityId) ?? null;
-    return { ...event, entityTitle };
+    return { ...event, entityTitle, relativeTimeLabel: toRelativeTimeLabel(event.occurredAt) };
   });
 }
 

@@ -1,17 +1,14 @@
-import { listActiveCourses } from "@/app/actions/course";
-import { listVideos } from "@/app/actions/video";
 import { VideoDashboard } from "@/components/dashboard/video-dashboard";
-import { getActivityByDay, getStreak } from "@/lib/progress";
+import { getDashboardSummary } from "@/lib/dashboard-summary";
+import { getActivityByDay } from "@/lib/progress";
 import { isWatchLaterConfigured } from "@/lib/watch-later-sync";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [videos, streak, activityByDay, activeCourses] = await Promise.all([
-    listVideos(),
-    getStreak(),
+  const [summary, activityByDay] = await Promise.all([
+    getDashboardSummary(),
     getActivityByDay(84),
-    listActiveCourses(3),
   ]);
   const watchLaterConfigured = isWatchLaterConfigured();
 
@@ -23,12 +20,46 @@ export default async function HomePage() {
 
   return (
     <VideoDashboard
-      initialVideos={videos}
+      initialVideos={summary.recentVideos.map((video) => ({
+        id: video.id,
+        url: video.url,
+        title: video.title,
+        thumbnail: video.thumbnail,
+        category: video.category,
+        isLearned: video.isLearned,
+        createdAt: video.createdAt.toISOString(),
+      }))}
       watchLaterConfigured={watchLaterConfigured}
-      streak={streak}
+      streak={{ ...summary.streak, lastEventDate: null }}
       weeklySummary={weeklySummary}
       activityByDay={activityByDay}
-      activeCourses={activeCourses}
+      activeCourses={summary.activeCourses.map((course) => ({
+        id: course.id,
+        title: course.title,
+        provider: course.provider,
+        url: course.url,
+        totalModules: course.totalModules,
+        completedModules: course.completedModules,
+        status: course.status,
+        category: course.category,
+        startedAt: course.startedAt.toISOString(),
+        targetCompletionDate: course.targetCompletionDate?.toISOString() ?? null,
+        completedAt: course.completedAt?.toISOString() ?? null,
+      }))}
+      activeProjects={summary.activeProjects.map((project) => ({
+        ...project,
+        startedAt: project.startedAt.toISOString(),
+        shippedAt: project.shippedAt?.toISOString() ?? null,
+      }))}
+      ventures={summary.ventures.map((venture) => ({
+        ...venture,
+        startedAt: venture.startedAt.toISOString(),
+        keyMetricUpdatedAt: venture.keyMetricUpdatedAt?.toISOString() ?? null,
+      }))}
+      recentEvents={summary.recentEvents.map((event) => ({
+        ...event,
+        occurredAt: event.occurredAt.toISOString(),
+      }))}
     />
   );
 }

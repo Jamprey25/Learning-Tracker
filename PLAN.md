@@ -333,9 +333,9 @@ Goal: one home screen that surfaces what's active across every entity type.
 
 ## 5.2 Home dashboard rebuild
 
-- [ ] **Files:** `src/components/dashboard/video-dashboard.tsx` (rename mentally to a generic dashboard; keep file name to avoid churn unless trivial).
-- [ ] **Layout:** streak/weekly/heatmap row → "in flight" row (courses / projects / ventures cards) → recent activity feed → recent videos.
-- [ ] **Recent activity feed item format:** `{icon} {entity title} — {event description} · {relative time} · +{xp} XP`
+- [x] **Files:** `src/components/dashboard/video-dashboard.tsx` (rename mentally to a generic dashboard; keep file name to avoid churn unless trivial).
+- [x] **Layout:** streak/weekly/heatmap row → "in flight" row (courses / projects / ventures cards) → recent activity feed → recent videos.
+- [x] **Recent activity feed item format:** `{icon} {entity title} — {event description} · {relative time} · +{xp} XP`
 
 ## 5.3 Phase 5 closeout
 

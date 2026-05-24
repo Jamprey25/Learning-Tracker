@@ -182,10 +182,12 @@ Key invariants:
 3. Emits `course_module` `progressed` ProgressEvent (+3 XP) only when the module flips incomplete -> complete.
 4. If the parent course transitions to completed in that transaction, emits one additional `course` `completed` event (+25 XP).
 
-### 4.9 Courses Dashboard Integration
-1. Home route loads `listActiveCourses(3)` in parallel with videos and streak/activity metrics.
-2. Dashboard renders an "Active Courses" widget showing top 3 active courses and progress bars.
-3. Top navigation includes a `/courses` route for dedicated course management.
+### 4.9 Unified Home Dashboard Composition
+1. Home route calls `getDashboardSummary()` plus `getActivityByDay(84)` and passes a single dashboard payload into `VideoDashboard`.
+2. The first row renders streak/weekly/heatmap widgets from `Streak`, weekly XP/event totals, and 84-day activity buckets.
+3. The "in-flight" row renders three cards sourced from summary data: active courses, active projects, and ventures.
+4. Recent activity renders from hydrated progress events in the format `{icon} {entity title} — {event description} · {relative time} · +{xp} XP`.
+5. Recent videos remains interactive on the home page (add URL, sync watch later, mark learned) and now consumes summary-provided recent videos as its initial list.
 
 ### 4.10 Project Milestone and Shipping Flow
 1. Project mutations are handled in `src/app/actions/project.ts` (`addProject`, `updateProjectStatus`, `addMilestone`, `completeMilestone`, `reorderMilestones`).
@@ -214,7 +216,7 @@ Key invariants:
 ### 4.14 Unified Summary Aggregation Flow
 1. `getDashboardSummary()` (`src/lib/dashboard-summary.ts`) fetches cross-entity dashboard data in one server-side call: streak, XP this week, active courses/projects, ventures, recent videos, and recent progress events.
 2. Recent `ProgressEvent` rows are hydrated with entity titles by grouping IDs by `entityType` and bulk-loading names/titles from each domain table.
-3. The helper returns `HydratedProgressEvent[]` (`ProgressEvent` + `entityTitle`) so UI rendering can describe activity without additional per-row lookups.
+3. The helper returns `HydratedProgressEvent[]` (`ProgressEvent` + `entityTitle` + `relativeTimeLabel`) so UI rendering can describe activity without additional per-row lookups.
 
 ## 5) External Integrations
 
@@ -264,7 +266,7 @@ Optional script-specific:
 - `src/app/globals.css`: global styling
 - `src/app/(app)/layout.tsx`: authenticated/app shell container + nav wrapper
 - `src/app/(app)/loading.tsx`: app-level loading boundary UI
-- `src/app/(app)/page.tsx`: dashboard route, loads video + streak/activity + active courses data
+- `src/app/(app)/page.tsx`: dashboard route, loads unified summary + activity data
 - `src/app/(app)/videos/page.tsx`: videos index route, server-loaded list
 - `src/app/(app)/courses/page.tsx`: courses index route, server-loaded list
 - `src/app/(app)/projects/page.tsx`: projects route, server-loaded list for status-board rendering
@@ -297,9 +299,8 @@ Optional script-specific:
 - `src/lib/utils.ts`: UI utility helpers
 
 ### UI components
-- `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/courses)
 - `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/courses/projects/ventures/research)
-- `src/components/dashboard/video-dashboard.tsx`: dashboard client logic + add/sync/toggle + gamification summary widgets + active courses
+- `src/components/dashboard/video-dashboard.tsx`: unified home dashboard client (gamification row, in-flight cards, recent activity, recent videos interactions)
 - `src/components/dashboard/streak-card.tsx`: streak metric card
 - `src/components/dashboard/weekly-summary.tsx`: rolling 7-day event and XP summary card
 - `src/components/dashboard/activity-heatmap.tsx`: 84-day GitHub-style activity heatmap

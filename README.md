@@ -1,6 +1,6 @@
 # Learning Tracker
 
-Learning Tracker is a personal learning dashboard for saving educational videos, organizing them by category, and tracking progress across videos and multi-module courses.
+Learning Tracker is a personal learning dashboard for saving educational videos and tracking progress across videos, courses, projects, ventures, and research topics.
 
 It is built with Next.js, Prisma, and PostgreSQL (Supabase), with optional YouTube playlist sync for fast importing.
 
@@ -14,7 +14,7 @@ It is built with Next.js, Prisma, and PostgreSQL (Supabase), with optional YouTu
 - Manage coding projects on `/projects` with status lanes and milestone checkoffs
 - Track ventures on `/ventures` with stage transitions and one key metric
 - Track research topics on `/research` with phase progression and notes links
-- Surface top active courses on the home dashboard
+- Show a unified home dashboard with streak/weekly stats, in-flight entities, recent cross-entity activity, and recent videos
 - Sync videos from a configured YouTube playlist into the database
 
 ## Tech stack
@@ -98,7 +98,7 @@ Sync walks the playlist from the start up to a limit (default **2000** entries) 
 - `src/app/(app)/projects/page.tsx` - projects board with milestone workflows
 - `src/app/(app)/ventures/page.tsx` - ventures page with stage + key metric updates
 - `src/app/(app)/research/page.tsx` - research topics page with phase updates
-- `src/components/dashboard/*` - dashboard UI (streak, heatmap, active courses)
+- `src/components/dashboard/*` - unified dashboard UI (streak, heatmap, in-flight entities, recent activity, recent videos)
 - `src/components/videos/*` - videos page client UI
 - `src/components/courses/*` - courses page client UI
 - `src/components/projects/*` - projects board and milestone management UI
