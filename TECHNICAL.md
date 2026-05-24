@@ -22,6 +22,12 @@ Core architecture style:
   - App routes render dynamically (`dynamic = "force-dynamic"` where used)
   - API handlers for sync/import run in Node runtime (`runtime = "nodejs"`)
 
+### Prisma CLI vs app runtime connections
+
+- **`src/lib/prisma.ts`** always uses **`DATABASE_URL`** to build the `pg` pool (`PrismaClient` + `@prisma/adapter-pg`). The pool is created with **`connectionString: <full URL>`** so query parameters Supabase attaches (`sslmode`, timeouts, session mode hints) survive; if `DATABASE_URL` targets Supabase’s **transaction pooler** (`*.pooler.supabase.com`, port **6543**), the code appends **`pgbouncer=true`** when missing — required for pooled connections that don’t support prepared statements cleanly.
+- **`prisma.config.ts`** sets **`datasource.url`** to **`DIRECT_URL` if defined**, otherwise `DATABASE_URL`. Prisma Migrate and other CLI commands therefore use the direct endpoint when configured.
+- **Supabase caveat:** DDL (migrations) through the transaction pool host (often `*.pooler.supabase.com` and port **`6543`**) commonly **hangs or fails**. Put Supabase’s **direct** Postgres connection (host `db.<project-ref>.supabase.co`, port **`5432`**) in **`DIRECT_URL`** for `prisma migrate` while keeping a pooler URL in **`DATABASE_URL`** for the running app. Supabase may label that direct host as IPv6-only on some plans; if your network is IPv4-only and the direct URL won’t connect, use the dashboard **Session pooler** string for `DIRECT_URL` or enable Supabase’s IPv4 add-on—see current Supabase connectivity docs.
+
 ## 3) Data Model
 
 Primary model (`prisma/schema.prisma`):

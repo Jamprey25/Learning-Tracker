@@ -306,7 +306,8 @@ If A → skip to 4.3 (lite version). If B → do 4.1 + 4.2.
 
 ## 4.4 Phase 4 closeout
 
-- [ ] Lint + build, docs updated.
+- [x] Lint + build, docs updated.
+- [ ] DB schema apply still blocked in this environment (`db:migrate` currently fails with P1000 auth).
 
 ---
 

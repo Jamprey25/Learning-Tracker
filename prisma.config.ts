@@ -8,7 +8,14 @@ export default defineConfig({
   migrations: {
     path: "prisma/migrations",
   },
+  // Prisma CLI (migrate / db commands) requires a plain Postgres session for DDL.
+  // Supabase’s transaction pooler (often :6543) can hang or block migrations; use
+  // DATABASE_URL pooled for `src/lib/prisma.ts` runtime and DIRECT_URL (direct IPv4 /
+  // port 5432) here when both are defined. See TECHNICAL.md § Prisma / Supabase.
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url:
+      process.env["DIRECT_URL"]?.trim() ||
+      process.env["DATABASE_URL"] ||
+      "",
   },
 });

@@ -8,11 +8,11 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
+  const raw = process.env.DATABASE_URL;
+  if (!raw) {
     throw new Error("DATABASE_URL is not set");
   }
-  const dbUrl = new URL(connectionString);
+  const dbUrl = new URL(raw);
   const isLocalhost =
     dbUrl.hostname === "localhost" || dbUrl.hostname === "127.0.0.1";
   const sslMode = dbUrl.searchParams.get("sslmode");
@@ -21,12 +21,18 @@ function createPrismaClient() {
     dbUrl.searchParams.get("connection_limit") ?? "10",
   );
 
+  // Supabase transaction pool (Supavisor, port 6543) rejects Prisma/pg prepared
+  // statements unless callers opt out via this flag — see Supabase Prisma troubleshooting.
+  const isSupabaseTransactionPool =
+    dbUrl.hostname.endsWith(".pooler.supabase.com") && dbUrl.port === "6543";
+  if (isSupabaseTransactionPool && !dbUrl.searchParams.has("pgbouncer")) {
+    dbUrl.searchParams.set("pgbouncer", "true");
+  }
+
+  // Pass full URL through `pg`: preserves sslmode, pgbouncer, connect_timeout,
+  // Supabase session parameters, etc. (manual host/user/password drops those).
   const pool = new pg.Pool({
-    host: dbUrl.hostname,
-    port: Number(dbUrl.port || "5432"),
-    database: dbUrl.pathname.replace(/^\//, ""),
-    user: decodeURIComponent(dbUrl.username),
-    password: decodeURIComponent(dbUrl.password),
+    connectionString: dbUrl.toString(),
     max: Number.isFinite(connectionLimit) ? connectionLimit : 10,
     ssl: shouldUseSsl ? { rejectUnauthorized: false } : undefined,
   });
