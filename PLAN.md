@@ -275,7 +275,7 @@ If A → skip to 4.3 (lite version). If B → do 4.1 + 4.2.
 
 ## 4.2 Research entity (Option B only)
 
-- [ ] **Schema:**
+- [x] **Schema:**
   ```prisma
   model ResearchTopic {
     id          String   @id @default(uuid())
@@ -286,9 +286,9 @@ If A → skip to 4.3 (lite version). If B → do 4.1 + 4.2.
     startedAt   DateTime @default(now()) @map("started_at")
   }
   ```
-- [ ] **Actions:** `addResearchTopic`, `updateResearchPhase`
-- [ ] **ProgressEvents:** phase advance → `xp: 15, eventType: "progressed"`; phase = "done" → `xp: 40, eventType: "completed"`
-- [ ] **UI:** `/research` page.
+- [x] **Actions:** `addResearchTopic`, `updateResearchPhase`
+- [x] **ProgressEvents:** phase advance → `xp: 15, eventType: "progressed"`; phase = "done" → `xp: 40, eventType: "completed"`
+- [x] **UI:** `/research` page.
 
 ## 4.3 Lite version (Option A only)
 

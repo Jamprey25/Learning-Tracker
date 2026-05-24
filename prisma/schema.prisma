@@ -105,3 +105,12 @@ model Venture {
   keyMetricUpdatedAt DateTime? @map("key_metric_updated_at")
 }
 
+model ResearchTopic {
+  id         String    @id @default(uuid())
+  title      String
+  phase      String    @default("planning")
+  notesUrl   String?   @map("notes_url")
+  targetDate DateTime? @map("target_date")
+  startedAt  DateTime  @default(now()) @map("started_at")
+}
+

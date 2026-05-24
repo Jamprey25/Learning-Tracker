@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  Beaker,
   FolderKanban,
   GraduationCap,
   Lightbulb,
@@ -13,6 +14,7 @@ const links = [
   { href: "/courses", label: "Courses", icon: GraduationCap },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/ventures", label: "Ventures", icon: Lightbulb },
+  { href: "/research", label: "Research", icon: Beaker },
 ] as const;
 
 export function AppNav() {
