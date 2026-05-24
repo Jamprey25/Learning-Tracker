@@ -1,6 +1,6 @@
 # Learning Tracker - Technical Structure
 
-Last updated: 2026-05-23
+Last updated: 2026-05-24
 
 ## 1) System Overview
 
@@ -97,6 +97,16 @@ Additional gamification models:
   - Relation: belongs to `Project` with cascade delete
   - Index: `[projectId]`
 
+- `Venture`
+  - `id: String` UUID primary key
+  - `name: String`
+  - `oneLiner: String?` mapped to `one_liner`
+  - `stage: String` default `"idea"` (`idea` | `validating` | `building` | `launched`)
+  - `startedAt: DateTime` default `now()`, mapped to `started_at`
+  - `keyMetricLabel: String?` mapped to `key_metric_label`
+  - `keyMetricValue: Float?` mapped to `key_metric_value`
+  - `keyMetricUpdatedAt: DateTime?` mapped to `key_metric_updated_at`
+
 Key invariants:
 - One logical YouTube video maps to one DB row because URLs are normalized to `https://www.youtube.com/watch?v=<videoId>`.
 - Progress/streak updates run transactionally via `recordProgressEvent` so event write and streak mutation stay consistent.
@@ -176,6 +186,12 @@ Key invariants:
 3. Project cards allow inline status transitions, milestone add/complete operations, and local milestone reordering.
 4. All project card mutations call server actions in `src/app/actions/project.ts`, then reconcile local optimistic state with server responses.
 
+### 4.12 Venture Stage and Metric Flow
+1. `/ventures` route loads venture rows using `listVentures()` and renders a lightweight card list.
+2. `updateVentureStage` emits a `venture` `progressed` event (+30 XP) only when stage changes.
+3. `updateVentureMetric` updates one key metric (`label` and/or `value`) and emits a `venture` `progressed` event (+5 XP).
+4. Venture cards keep one in-focus metric by design to stay lightweight while preserving progress signal in `ProgressEvent`.
+
 ## 5) External Integrations
 
 - Google OAuth token endpoint:
@@ -228,11 +244,13 @@ Optional script-specific:
 - `src/app/(app)/videos/page.tsx`: videos index route, server-loaded list
 - `src/app/(app)/courses/page.tsx`: courses index route, server-loaded list
 - `src/app/(app)/projects/page.tsx`: projects route, server-loaded list for status-board rendering
+- `src/app/(app)/ventures/page.tsx`: ventures route, server-loaded card list with stage and key metric editing
 
 ### Actions and API
 - `src/app/actions/video.ts`: list + update learned state + learned completion event emission
 - `src/app/actions/course.ts`: list/add/update course progress/status + module completion actions with XP emission
 - `src/app/actions/project.ts`: list/add/update project status + milestone lifecycle actions with XP emission
+- `src/app/actions/venture.ts`: list/add ventures + stage/metric updates with XP emission
 - `src/app/actions/youtube.ts`: URL save server action
 - `src/app/actions/sync.ts`: dashboard sync action orchestration
 - `src/app/api/sync/youtube/route.ts`: secured sync endpoint (cron/script-safe)
@@ -253,7 +271,7 @@ Optional script-specific:
 
 ### UI components
 - `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/courses)
-- `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/courses/projects)
+- `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/courses/projects/ventures)
 - `src/components/dashboard/video-dashboard.tsx`: dashboard client logic + add/sync/toggle + gamification summary widgets + active courses
 - `src/components/dashboard/streak-card.tsx`: streak metric card
 - `src/components/dashboard/weekly-summary.tsx`: rolling 7-day event and XP summary card
@@ -265,6 +283,7 @@ Optional script-specific:
 - `src/components/projects/project-detail.tsx`: milestone list/add/reorder and completion controls per project
 - `src/components/projects/project-card.tsx`: project-level status controls + embedded milestone detail
 - `src/components/projects/projects-client.tsx`: status-board grouping, add-project form, and optimistic project/milestone mutations
+- `src/components/ventures/ventures-client.tsx`: venture list, stage selector, and key metric update controls
 - `src/components/ui/*`: reusable UI primitives
 
 ### Scripts and data
@@ -275,7 +294,7 @@ Optional script-specific:
 - `data/get-smarter-videos.json`: seed input dataset
 
 ### Infra/config
-- `prisma/schema.prisma`: schema definition (Video/ProgressEvent/Streak/Course/CourseModule/Project/Milestone)
+- `prisma/schema.prisma`: schema definition (Video/ProgressEvent/Streak/Course/CourseModule/Project/Milestone/Venture)
 - `prisma/migrations/*`: migration history
 - `next.config.ts`: image host allowlist + turbopack root
 - `eslint.config.mjs`, `postcss.config.mjs`, `tsconfig.json`: toolchain configuration

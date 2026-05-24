@@ -256,7 +256,7 @@ If A → skip to 4.3 (lite version). If B → do 4.1 + 4.2.
 
 ## 4.1 Venture entity (Option B only)
 
-- [ ] **Schema:**
+- [x] **Schema:**
   ```prisma
   model Venture {
     id                  String   @id @default(uuid())
@@ -269,9 +269,9 @@ If A → skip to 4.3 (lite version). If B → do 4.1 + 4.2.
     keyMetricUpdatedAt  DateTime? @map("key_metric_updated_at")
   }
   ```
-- [ ] **Actions:** `addVenture`, `updateVentureStage`, `updateVentureMetric`
-- [ ] **ProgressEvents:** stage change → `xp: 30, eventType: "progressed"`; metric update → `xp: 5`
-- [ ] **UI:** `/ventures` page, simple card list. One metric per venture, no analytics dashboards.
+- [x] **Actions:** `addVenture`, `updateVentureStage`, `updateVentureMetric`
+- [x] **ProgressEvents:** stage change → `xp: 30, eventType: "progressed"`; metric update → `xp: 5`
+- [x] **UI:** `/ventures` page, simple card list. One metric per venture, no analytics dashboards.
 
 ## 4.2 Research entity (Option B only)
 

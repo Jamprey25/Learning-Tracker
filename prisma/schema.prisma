@@ -94,3 +94,14 @@ model Milestone {
   @@index([projectId])
 }
 
+model Venture {
+  id                 String    @id @default(uuid())
+  name               String
+  oneLiner           String?   @map("one_liner")
+  stage              String    @default("idea")
+  startedAt          DateTime  @default(now()) @map("started_at")
+  keyMetricLabel     String?   @map("key_metric_label")
+  keyMetricValue     Float?    @map("key_metric_value")
+  keyMetricUpdatedAt DateTime? @map("key_metric_updated_at")
+}
+
