@@ -1,6 +1,6 @@
 # Learning Tracker - Technical Structure
 
-Last updated: 2026-05-22
+Last updated: 2026-05-23
 
 ## 1) System Overview
 
@@ -75,6 +75,27 @@ Additional gamification models:
   - `completedAt: DateTime?` mapped to `completed_at`
   - Relation: belongs to `Course` with cascade delete
   - Index: `[courseId]`
+
+- `Project`
+  - `id: String` UUID primary key
+  - `name: String`
+  - `description: String?` optional project summary
+  - `repoUrl: String?` mapped to `repo_url`
+  - `status: String` default `"planning"` (`planning` | `active` | `shipped` | `shelved`)
+  - `category: String` default `"General"`
+  - `startedAt: DateTime` default `now()`, mapped to `started_at`
+  - `shippedAt: DateTime?` mapped to `shipped_at`
+  - Relation: one-to-many with `Milestone`
+
+- `Milestone`
+  - `id: String` UUID primary key
+  - `projectId: String` mapped to `project_id`
+  - `title: String`
+  - `status: String` default `"pending"` (`pending` | `done`)
+  - `orderIndex: Int` mapped to `order_index`
+  - `completedAt: DateTime?` mapped to `completed_at`
+  - Relation: belongs to `Project` with cascade delete
+  - Index: `[projectId]`
 
 Key invariants:
 - One logical YouTube video maps to one DB row because URLs are normalized to `https://www.youtube.com/watch?v=<videoId>`.
@@ -235,7 +256,7 @@ Optional script-specific:
 - `data/get-smarter-videos.json`: seed input dataset
 
 ### Infra/config
-- `prisma/schema.prisma`: schema definition
+- `prisma/schema.prisma`: schema definition (Video/ProgressEvent/Streak/Course/CourseModule/Project/Milestone)
 - `prisma/migrations/*`: migration history
 - `next.config.ts`: image host allowlist + turbopack root
 - `eslint.config.mjs`, `postcss.config.mjs`, `tsconfig.json`: toolchain configuration
