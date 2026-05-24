@@ -339,7 +339,9 @@ Goal: one home screen that surfaces what's active across every entity type.
 
 ## 5.3 Phase 5 closeout
 
-- [ ] Lint + build, docs updated, screenshot the dashboard for your own records.
+- [x] Lint + build, docs updated.
+- [x] Screenshot captured for records (current runtime error state).
+- [ ] Healthy dashboard manual screenshot (blocked by runtime DB/schema connectivity issue on `/` in this environment).
 
 ---
 
