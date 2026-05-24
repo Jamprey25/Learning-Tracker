@@ -317,8 +317,8 @@ Goal: one home screen that surfaces what's active across every entity type.
 
 ## 5.1 Cross-entity summary query
 
-- [ ] **Files:** create `src/lib/dashboard-summary.ts`
-- [ ] **Export:** `getDashboardSummary()` returning:
+- [x] **Files:** create `src/lib/dashboard-summary.ts`
+- [x] **Export:** `getDashboardSummary()` returning:
   ```ts
   {
     streak: { current, longest },

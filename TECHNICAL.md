@@ -211,6 +211,11 @@ Key invariants:
 2. `updateResearchPhase` emits `research` `progressed` events (+15 XP) for phase advances and `research` `completed` (+40 XP) when transitioning into `done`.
 3. Research cards keep optional `notesUrl` and `targetDate` metadata to bridge external note systems while preserving in-app progress checkpoints.
 
+### 4.14 Unified Summary Aggregation Flow
+1. `getDashboardSummary()` (`src/lib/dashboard-summary.ts`) fetches cross-entity dashboard data in one server-side call: streak, XP this week, active courses/projects, ventures, recent videos, and recent progress events.
+2. Recent `ProgressEvent` rows are hydrated with entity titles by grouping IDs by `entityType` and bulk-loading names/titles from each domain table.
+3. The helper returns `HydratedProgressEvent[]` (`ProgressEvent` + `entityTitle`) so UI rendering can describe activity without additional per-row lookups.
+
 ## 5) External Integrations
 
 - Google OAuth token endpoint:
@@ -281,6 +286,7 @@ Optional script-specific:
 - `src/lib/prisma.ts`: Prisma client + PG adapter + pool config
 - `src/lib/progress.ts`: canonical progress event writes + streak + activity aggregation queries
 - `src/lib/course-progress.ts`: course status + module count normalization helpers
+- `src/lib/dashboard-summary.ts`: cross-entity dashboard aggregation + progress-event title hydration
 - `src/lib/youtube.ts`: YouTube URL parsing/canonicalization primitives
 - `src/lib/youtube-ingest.ts`: canonical ingest pipeline + dedupe + persistence
 - `src/lib/youtube-watch-later.ts`: OAuth refresh + playlist API client
