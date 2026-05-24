@@ -191,8 +191,8 @@ Goal: track coding projects with milestones.
 
 ## 3.1 Schema: Project + Milestone
 
-- [ ] **Files:** `prisma/schema.prisma`
-- [ ] **Add:**
+- [x] **Files:** `prisma/schema.prisma`
+- [x] **Add:**
   ```prisma
   model Project {
     id          String      @id @default(uuid())
@@ -221,23 +221,24 @@ Goal: track coding projects with milestones.
 
 ## 3.2 Project backend
 
-- [ ] **Files:** `src/app/actions/project.ts`
-- [ ] **Actions:** `addProject`, `updateProjectStatus`, `addMilestone`, `completeMilestone`, `reorderMilestones`
-- [ ] **ProgressEvents:**
+- [x] **Files:** `src/app/actions/project.ts`
+- [x] **Actions:** `addProject`, `updateProjectStatus`, `addMilestone`, `completeMilestone`, `reorderMilestones`
+- [x] **ProgressEvents:**
   - Milestone complete → `xp: 10, eventType: "progressed"`
   - Status → "shipped" → `xp: 50, eventType: "shipped"` (the big one)
-- [ ] **Deferred (do NOT build now):** GitHub commit auto-fetch. Add a `// TODO: v2` comment where it would plug in.
+- [x] **Deferred (do NOT build now):** GitHub commit auto-fetch. Add a `// TODO: v2` comment where it would plug in.
 
 ## 3.3 Projects page UI
 
-- [ ] **Files:** `src/app/(app)/projects/page.tsx`, `src/components/projects/projects-client.tsx`, `src/components/projects/project-card.tsx`, `src/components/projects/project-detail.tsx`
-- [ ] **Layout:** kanban-style columns for `planning` / `active` / `shipped` / `shelved` (or a tab/filter — pick what looks better in your existing UI).
-- [ ] **Project detail view:** milestone list with check-off + add-milestone input.
-- [ ] **Add to nav.**
+- [x] **Files:** `src/app/(app)/projects/page.tsx`, `src/components/projects/projects-client.tsx`, `src/components/projects/project-card.tsx`, `src/components/projects/project-detail.tsx`
+- [x] **Layout:** kanban-style columns for `planning` / `active` / `shipped` / `shelved` (or a tab/filter — pick what looks better in your existing UI).
+- [x] **Project detail view:** milestone list with check-off + add-milestone input.
+- [x] **Add to nav.**
 
 ## 3.4 Phase 3 closeout
 
-- [ ] Lint + build pass, docs updated, manual test full flow.
+- [x] Lint + build pass, docs updated.
+- [ ] Manual test full flow (blocked until DB schema apply command succeeds in this environment).
 
 ---
 
