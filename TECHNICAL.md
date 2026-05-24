@@ -163,6 +163,13 @@ Key invariants:
 2. Dashboard renders an "Active Courses" widget showing top 3 active courses and progress bars.
 3. Top navigation includes a `/courses` route for dedicated course management.
 
+### 4.10 Project Milestone and Shipping Flow
+1. Project mutations are handled in `src/app/actions/project.ts` (`addProject`, `updateProjectStatus`, `addMilestone`, `completeMilestone`, `reorderMilestones`).
+2. `completeMilestone` transitions a milestone from `pending` to `done` transactionally and emits one `milestone` `progressed` event (+10 XP) only on first completion.
+3. `updateProjectStatus` emits one `project` `shipped` event (+50 XP) when status transitions into `shipped`; moving out of `shipped` does not emit additional events.
+4. Milestone reordering validates exact milestone membership for a project before applying new `orderIndex` values to preserve ordering integrity.
+5. `updateProjectStatus` includes a deferred `// TODO: v2` hook point for future GitHub commit auto-fetch integration after shipping.
+
 ## 5) External Integrations
 
 - Google OAuth token endpoint:
@@ -218,6 +225,7 @@ Optional script-specific:
 ### Actions and API
 - `src/app/actions/video.ts`: list + update learned state + learned completion event emission
 - `src/app/actions/course.ts`: list/add/update course progress/status + module completion actions with XP emission
+- `src/app/actions/project.ts`: list/add/update project status + milestone lifecycle actions with XP emission
 - `src/app/actions/youtube.ts`: URL save server action
 - `src/app/actions/sync.ts`: dashboard sync action orchestration
 - `src/app/api/sync/youtube/route.ts`: secured sync endpoint (cron/script-safe)
