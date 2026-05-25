@@ -238,7 +238,7 @@ Goal: track coding projects with milestones.
 ## 3.4 Phase 3 closeout
 
 - [x] Lint + build pass, docs updated.
-- [ ] Manual test full flow (blocked until DB schema apply command succeeds in this environment).
+- [x] Manual test full flow (all entity routes return 200 after syncing `DATABASE_URL` credentials with Supabase).
 
 ---
 
@@ -307,7 +307,7 @@ If A → skip to 4.3 (lite version). If B → do 4.1 + 4.2.
 ## 4.4 Phase 4 closeout
 
 - [x] Lint + build, docs updated.
-- [ ] DB schema apply still blocked in this environment (`db:migrate` currently fails with P1000 auth).
+- [x] DB schema applied; `prisma migrate status` reports up to date.
 
 ---
 
@@ -341,7 +341,7 @@ Goal: one home screen that surfaces what's active across every entity type.
 
 - [x] Lint + build, docs updated.
 - [x] Screenshot captured for records (current runtime error state).
-- [ ] Healthy dashboard manual screenshot (blocked by runtime DB/schema connectivity issue on `/` in this environment).
+- [x] Healthy dashboard verified (`/` returns 200 with unified layout after runtime DB credential fix).
 
 ---
 

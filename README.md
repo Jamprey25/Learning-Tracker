@@ -37,7 +37,7 @@ npm install
 
 ```bash
 DATABASE_URL="postgresql://..."
-# If you use Supabase’s transaction pool (often port 6543), add a separate direct Postgres URL here for Prisma CLI/migrations (`prisma.config.ts` uses DIRECT_URL first). Leave unset for local Postgres.
+# If you use Supabase’s transaction pool (often port 6543), add a separate direct/session Postgres URL here for Prisma CLI/migrations (`prisma.config.ts` uses DIRECT_URL first). Keep the password in both URLs in sync when you rotate credentials.
 # DIRECT_URL="postgresql://..."
 GOOGLE_CLIENT_ID="..."
 GOOGLE_CLIENT_SECRET="..."
