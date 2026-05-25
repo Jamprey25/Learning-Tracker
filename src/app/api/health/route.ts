@@ -29,31 +29,31 @@ export async function GET() {
   }
 
   try {
-    await prisma.$queryRaw`SELECT 1`;
-    const tables = await prisma.$queryRaw<Array<{ table_name: string }>>`
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-        AND table_name IN ('videos', 'ProgressEvent', 'Streak', 'Course', 'Project')
-      ORDER BY table_name
-    `;
+    const [videoCount, eventCount, streakCount] = await Promise.all([
+      prisma.video.count(),
+      prisma.progressEvent.count(),
+      prisma.streak.count(),
+    ]);
 
     return Response.json({
       ok: true,
       database: target,
-      tables: tables.map((row) => row.table_name),
+      counts: { videos: videoCount, progressEvents: eventCount, streakRows: streakCount },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const code =
-      error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined;
+    const prismaError =
+      error instanceof Prisma.PrismaClientKnownRequestError ? error : null;
+    const message =
+      prismaError?.message ||
+      (error instanceof Error ? error.message : String(error));
 
     return Response.json(
       {
         ok: false,
         database: target,
-        error: message.split("\n")[0],
-        code,
+        error: message.split("\n")[0] || "Database query failed",
+        code: prismaError?.code,
+        meta: prismaError?.meta,
         hint:
           target.port === "6543"
             ? "This app uses @prisma/adapter-pg. Prefer Supabase session pooler port 5432 for DATABASE_URL on Vercel."

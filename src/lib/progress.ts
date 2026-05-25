@@ -142,23 +142,18 @@ export async function getActivityByDay(days = 84): Promise<DailyActivity[]> {
   const today = toUtcDayStart(new Date());
   const start = addUtcDays(today, -(safeDays - 1));
 
-  const rows = await prisma.$queryRaw<Array<{ day: Date; count: bigint; xp: bigint }>>`
-    SELECT
-      date_trunc('day', "occurred_at") AS day,
-      COUNT(*)::bigint AS count,
-      COALESCE(SUM("xp"), 0)::bigint AS xp
-    FROM "ProgressEvent"
-    WHERE "occurred_at" >= ${start}
-    GROUP BY 1
-    ORDER BY 1 ASC
-  `;
+  const events = await prisma.progressEvent.findMany({
+    where: { occurredAt: { gte: start } },
+    select: { occurredAt: true, xp: true },
+  });
 
   const byDay = new Map<string, { count: number; xp: number }>();
-  for (const row of rows) {
-    byDay.set(dayKey(row.day), {
-      count: Number(row.count),
-      xp: Number(row.xp),
-    });
+  for (const event of events) {
+    const key = dayKey(event.occurredAt);
+    const existing = byDay.get(key) ?? { count: 0, xp: 0 };
+    existing.count += 1;
+    existing.xp += event.xp;
+    byDay.set(key, existing);
   }
 
   const activity: DailyActivity[] = [];
