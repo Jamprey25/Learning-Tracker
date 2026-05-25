@@ -7,6 +7,18 @@ const globalForPrisma = globalThis as unknown as {
   prismaConnectionString: string | undefined;
 };
 
+function resolvePoolMax(dbUrl: URL): number {
+  const fromUrl = Number(dbUrl.searchParams.get("connection_limit"));
+  if (Number.isFinite(fromUrl) && fromUrl > 0) {
+    return fromUrl;
+  }
+  // Serverless + Supabase pooler: one connection per function instance is enough.
+  if (dbUrl.hostname.endsWith(".pooler.supabase.com")) {
+    return 1;
+  }
+  return 10;
+}
+
 function createPrismaClient() {
   const raw = process.env.DATABASE_URL;
   if (!raw) {
@@ -17,23 +29,24 @@ function createPrismaClient() {
     dbUrl.hostname === "localhost" || dbUrl.hostname === "127.0.0.1";
   const sslMode = dbUrl.searchParams.get("sslmode");
   const shouldUseSsl = !isLocalhost && sslMode !== "disable";
-  const connectionLimit = Number(
-    dbUrl.searchParams.get("connection_limit") ?? "10",
-  );
+  const poolMax = resolvePoolMax(dbUrl);
 
-  // Supabase transaction pool (Supavisor, port 6543) rejects Prisma/pg prepared
-  // statements unless callers opt out via this flag — see Supabase Prisma troubleshooting.
   const isSupabaseTransactionPool =
     dbUrl.hostname.endsWith(".pooler.supabase.com") && dbUrl.port === "6543";
   if (isSupabaseTransactionPool && !dbUrl.searchParams.has("pgbouncer")) {
     dbUrl.searchParams.set("pgbouncer", "true");
   }
+  if (!isLocalhost && !dbUrl.searchParams.has("sslmode")) {
+    dbUrl.searchParams.set("sslmode", "require");
+  }
 
-  // Pass full URL through `pg`: preserves sslmode, pgbouncer, connect_timeout,
-  // Supabase session parameters, etc. (manual host/user/password drops those).
+  // `@prisma/adapter-pg` uses node-postgres directly; Prisma's `pgbouncer=true`
+  // URL flag does not fully disable prepared statements in the adapter path.
+  // Supabase transaction pool (6543) rejects prepared statements — prefer session
+  // pool (5432) for DATABASE_URL on Vercel with this adapter setup.
   const pool = new pg.Pool({
     connectionString: dbUrl.toString(),
-    max: Number.isFinite(connectionLimit) ? connectionLimit : 10,
+    max: poolMax,
     ssl: shouldUseSsl ? { rejectUnauthorized: false } : undefined,
   });
   const adapter = new PrismaPg(pool);
@@ -41,17 +54,19 @@ function createPrismaClient() {
 }
 
 const currentConnectionString = process.env.DATABASE_URL ?? "";
-const shouldCreateClient =
-  !globalForPrisma.prisma ||
-  globalForPrisma.prismaConnectionString !== currentConnectionString;
 
-const prismaClient: PrismaClient = shouldCreateClient
-  ? createPrismaClient()
-  : (globalForPrisma.prisma ?? createPrismaClient());
+function getPrismaClient(): PrismaClient {
+  if (
+    globalForPrisma.prisma &&
+    globalForPrisma.prismaConnectionString === currentConnectionString
+  ) {
+    return globalForPrisma.prisma;
+  }
 
-export const prisma = prismaClient;
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prismaClient;
+  const client = createPrismaClient();
+  globalForPrisma.prisma = client;
   globalForPrisma.prismaConnectionString = currentConnectionString;
+  return client;
 }
+
+export const prisma = getPrismaClient();

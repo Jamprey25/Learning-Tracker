@@ -47,17 +47,31 @@ export default async function HomePage() {
         completedAt: course.completedAt?.toISOString() ?? null,
       }))}
       activeProjects={summary.activeProjects.map((project) => ({
-        ...project,
+        id: project.id,
+        name: project.name,
+        status: project.status,
+        category: project.category,
         startedAt: project.startedAt.toISOString(),
         shippedAt: project.shippedAt?.toISOString() ?? null,
       }))}
       ventures={summary.ventures.map((venture) => ({
-        ...venture,
+        id: venture.id,
+        name: venture.name,
+        stage: venture.stage,
+        keyMetricLabel: venture.keyMetricLabel,
+        keyMetricValue:
+          venture.keyMetricValue == null ? null : Number(venture.keyMetricValue),
         startedAt: venture.startedAt.toISOString(),
-        keyMetricUpdatedAt: venture.keyMetricUpdatedAt?.toISOString() ?? null,
       }))}
       recentEvents={summary.recentEvents.map((event) => ({
-        ...event,
+        id: event.id,
+        entityType: event.entityType,
+        entityId: event.entityId,
+        eventType: event.eventType,
+        xp: event.xp,
+        note: event.note,
+        entityTitle: event.entityTitle,
+        relativeTimeLabel: event.relativeTimeLabel,
         occurredAt: event.occurredAt.toISOString(),
       }))}
     />
