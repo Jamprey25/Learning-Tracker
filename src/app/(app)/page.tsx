@@ -36,8 +36,8 @@ export default async function HomePage() {
       activeCourses={summary.activeCourses.map((course) => ({
         id: course.id,
         title: course.title,
-        provider: course.provider,
-        url: course.url,
+        provider: course.provider ?? null,
+        url: course.url ?? null,
         totalModules: course.totalModules,
         completedModules: course.completedModules,
         status: course.status,
@@ -58,7 +58,7 @@ export default async function HomePage() {
         id: venture.id,
         name: venture.name,
         stage: venture.stage,
-        keyMetricLabel: venture.keyMetricLabel,
+        keyMetricLabel: venture.keyMetricLabel ?? null,
         keyMetricValue:
           venture.keyMetricValue == null ? null : Number(venture.keyMetricValue),
         startedAt: venture.startedAt.toISOString(),
@@ -69,7 +69,7 @@ export default async function HomePage() {
         entityId: event.entityId,
         eventType: event.eventType,
         xp: event.xp,
-        note: event.note,
+        note: event.note ?? null,
         entityTitle: event.entityTitle,
         relativeTimeLabel: event.relativeTimeLabel,
         occurredAt: event.occurredAt.toISOString(),
