@@ -27,8 +27,6 @@ function createPrismaClient() {
   const dbUrl = new URL(raw);
   const isLocalhost =
     dbUrl.hostname === "localhost" || dbUrl.hostname === "127.0.0.1";
-  const sslMode = dbUrl.searchParams.get("sslmode");
-  const shouldUseSsl = !isLocalhost && sslMode !== "disable";
   const poolMax = resolvePoolMax(dbUrl);
 
   const isSupabaseTransactionPool =
@@ -36,20 +34,19 @@ function createPrismaClient() {
   if (isSupabaseTransactionPool && !dbUrl.searchParams.has("pgbouncer")) {
     dbUrl.searchParams.set("pgbouncer", "true");
   }
-  if (!isLocalhost && !dbUrl.searchParams.has("sslmode")) {
-    dbUrl.searchParams.set("sslmode", "require");
+
+  // Use one SSL mechanism only. Combining `sslmode=` in the URL with a separate
+  // `ssl` pool option causes P1011 ("Error opening a TLS connection") on Vercel.
+  if (!isLocalhost) {
+    dbUrl.searchParams.delete("sslmode");
   }
 
-  // `@prisma/adapter-pg` uses node-postgres directly; Prisma's `pgbouncer=true`
-  // URL flag does not fully disable prepared statements in the adapter path.
-  // Supabase transaction pool (6543) rejects prepared statements — prefer session
-  // pool (5432) for DATABASE_URL on Vercel with this adapter setup.
   const pool = new pg.Pool({
     connectionString: dbUrl.toString(),
     max: poolMax,
     idleTimeoutMillis: 5_000,
-    connectionTimeoutMillis: 10_000,
-    ssl: shouldUseSsl ? { rejectUnauthorized: false } : undefined,
+    connectionTimeoutMillis: 15_000,
+    ssl: isLocalhost ? undefined : { rejectUnauthorized: false },
   });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
