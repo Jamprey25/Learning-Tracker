@@ -249,11 +249,14 @@ Key invariants:
 2. Recent `ProgressEvent` rows are hydrated with entity titles by grouping IDs by `entityType` and bulk-loading names/titles from each domain table.
 3. The helper returns `HydratedProgressEvent[]` (`ProgressEvent` + `entityTitle` + `relativeTimeLabel`) so UI rendering can describe activity without additional per-row lookups.
 
-### 4.15 Local study cards
-1. When Claude is unavailable, `persistLearnedRecall` builds the stored note with `buildVideoReference`.
-2. `TOPIC_RULES` is an ordered list of regex → study-card templates. The first match writes the summary; later matches still contribute concepts.
+### 4.15 Video reference summaries
+1. `/videos` loads rows via `listVideos()` and the client calls `buildVideoReference({ title, category, isLearned })` per row.
+2. `TOPIC_RULES` is an ordered list of regex → study-card templates. The first match writes the visible summary; later matches still contribute concepts/questions.
+3. Search concatenates title + summary + remember + concepts (client-side), so a query like `ontology` can surface Palantir without matching the title.
+4. The list is grouped by `Video.category` in `CATEGORIES` order. Each group has a sticky colored heading; cards use the same palette (`categoryTint` + `categoryBar`) so Programming/Science/Business stay visually distinct. Filter pills keep idle category color even when unselected.
+5. Vault export uses the same composer so Obsidian notes stay consistent with the in-app study cards. `--llm` overlays longer Claude text when credits exist.
 
-Pedagogical note: this is a **production-rule system** (ordered pattern → structured record), not a language model. Specificity ordering is the invariant — a general rule after a specific one is the difference between a useful mental model and a generic blurb.
+Pedagogical note: this is a **production-rule system** (ordered pattern → structured record), not a language model. Specificity ordering is the invariant — a general `/\bpython\b/` rule after a `python actually works` rule is the difference between a useful mental model and a generic "syntax is cheap" blurb. The LLM path is the same schema with a richer generator.
 
 ## 5) External Integrations
 
@@ -270,6 +273,12 @@ Remediation: Fix the consent-screen / credential issue in Google Cloud Console, 
   - `search` in seeding script
 - YouTube oEmbed endpoint:
   - Lightweight metadata retrieval (title/thumbnail)
+
+**Obsidian knowledge vault:** `scripts/export-obsidian-knowledge-vault.ts` writes one markdown note per video plus category/concept hub notes into an existing vault. Notes use `[[wiki links]]` so Obsidian Graph view is the knowledge graph (a bipartite graph: video ↔ concept). After writing notes it re-applies Graph **Groups** in `.obsidian/graph.json` (quoted `path:"Learning Tracker/Videos"` queries; first match wins). Video nodes are colored by category tag (`#programming` blue, `#science` emerald, `#business` cyan, `#general` sky — never zinc/grey). Concepts are purple; Categories are amber. A trailing `file:` / empty-query group plus `hideUnresolved` / `showTags: false` keeps leftover nodes from rendering as default grey. Obsidian overwrites `graph.json` on quit if the app still has `colorGroups: []` in memory — quit with **Cmd+Q** after a re-apply, then reopen Graph view. Default enrichment is local title→topic rules (`src/lib/video-reference.ts` + `src/lib/video-reference-rules.ts`, re-exported by `scripts/obsidian-local-enrichment.ts`). Each note gets a **reference summary** (claim, mechanism, reusable piece, caveat, when to reuse) plus **What to remember**, discussion questions, and takeaways. The first matching rule wins for the written summary so a Palantir title does not fall through to a generic Business lens. Pass `--llm` to overlay Claude study notes when Anthropic credits exist (`summary` is 5–8 sentences; `remember` is 5–7 lookup facts). Transcripts are not fetched.
+
+**Embeddings + nearest neighbors:** `scripts/embed-vault-neighbors.ts` loads `Learning Tracker/Videos/*.md`, embeds `title + category + concepts + summary` with `Xenova/all-MiniLM-L6-v2` via `@huggingface/transformers` (or `--hash` 64-d hashed n-grams if the model cannot download). Cosine top-k is written into each note between `<!-- embeddings-neighbors:start -->` markers and into `Learning Tracker/Embedding Neighbors.md`. Cache: `data/vault-neighbors.json` (re-applied after `obsidian:vault`) and `data/vault-embeddings.json` (gitignored vectors). The Next app reads that cache on `/similar` (`getSimilarGraph`) and joins DB videos by normalized title for thumbnails/YouTube URLs.
+
+Pedagogical note: wiki-links are an adjacency list. Obsidian Graph view is just a force-directed drawing of that graph. Shared concept notes are hubs that raise clustering coefficient — that is why related-video links appear without a separate "recommendation engine." Embedding neighbors are a second adjacency list in vector space; disagreement between the two lists is the signal.
 
 Security boundaries:
 - API sync/import routes require `Authorization: Bearer <SYNC_SECRET>`.
@@ -297,6 +306,7 @@ Optional script-specific:
 - `YOUTUBE_API_KEY` (seed script only)
 - `ANTHROPIC_API_KEY` — study-note generation for Obsidian export / learned-video notes
 - `OBSIDIAN_API_KEY`, `OBSIDIAN_BASE_URL`, `OBSIDIAN_NOTES_FOLDER` — Local REST API path used by `src/lib/obsidian.ts`
+- `OBSIDIAN_VAULT_PATH` — filesystem vault root for `scripts/export-obsidian-knowledge-vault.ts`
 
 ## 7) Source Structure and Responsibilities
 
@@ -306,12 +316,12 @@ Optional script-specific:
 - `src/app/(app)/layout.tsx`: authenticated/app shell container + nav wrapper
 - `src/app/(app)/loading.tsx`: app-level loading boundary UI
 - `src/app/(app)/page.tsx`: dashboard route, loads unified summary + activity data
-- `src/app/(app)/videos/page.tsx`: videos index route, server-loaded list
+- `src/app/(app)/videos/page.tsx`: videos index route, server-loaded list rendered as reference study cards
 - `src/app/(app)/courses/page.tsx`: courses index route, server-loaded list
 - `src/app/(app)/projects/page.tsx`: projects route, server-loaded list for status-board rendering
 - `src/app/(app)/ventures/page.tsx`: ventures route, server-loaded card list with stage and key metric editing
 - `src/app/(app)/research/page.tsx`: research route, server-loaded topic list with phase progression
-- `src/app/(app)/recall/page.tsx`: daily recall session
+- `src/app/(app)/similar/page.tsx`: embedding nearest-neighbor explorer (`?title=` optional)
 
 ### Actions and API
 - `src/app/actions/video.ts`: list + update learned state + learned completion event emission
@@ -319,7 +329,7 @@ Optional script-specific:
 - `src/app/actions/project.ts`: list/add/update project status + milestone lifecycle actions with XP emission
 - `src/app/actions/venture.ts`: list/add ventures + stage/metric updates with XP emission
 - `src/app/actions/research.ts`: list/add research topics + phase updates with XP emission
-- `src/app/actions/recall.ts`: queue load, rating, session progress event
+- `src/app/actions/similar.ts`: load MiniLM neighbor cache and join YouTube thumbnails/URLs by title
 - `src/app/actions/youtube.ts`: URL save server action
 - `src/app/actions/sync.ts`: dashboard sync action orchestration
 - `src/app/api/sync/youtube/route.ts`: secured sync endpoint (cron/script-safe)
@@ -336,7 +346,7 @@ Optional script-specific:
 - `src/lib/youtube-watch-later.ts`: OAuth refresh + playlist API client
 - `src/lib/watch-later-sync.ts`: sync orchestration and result shaping
 - `src/lib/sync-request-auth.ts`: bearer-token gate for sync/import routes
-- `src/lib/categories.ts`: category taxonomy + badge color mapping
+- `src/lib/categories.ts`: category taxonomy + badge, tint, heading, and glow color mapping
 - `src/lib/infer-category.ts`: keyword-based category inference heuristic
 - `src/lib/utils.ts`: UI utility helpers
 - `src/lib/obsidian.ts`: Claude study-note generation (`generateStudyNote`) and Local REST API PUT (`writeObsidianNote`). `createObsidianNote` is both, used by the backfill script
@@ -344,15 +354,21 @@ Optional script-specific:
 - `src/lib/recall.ts`: persist note + cards on learned, load the due/neglected queue, apply a rating
 - `src/lib/video-reference.ts`: title→study-card composer (`summary`, `remember`, questions, takeaways, concepts)
 - `src/lib/video-reference-rules.ts`: specific-to-general topic rules that drive local reference notes
+- `src/lib/vault-neighbor-model.ts`: client-safe types + `titleKey` / `graphDisagrees` (no `node:fs`)
+- `src/lib/vault-neighbors.ts`: server-only read of `data/vault-neighbors.json` and title-key join onto DB videos
 
 ### UI components
-- `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/recall/courses/projects/ventures/research)
+- `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/recall/similar/courses/projects/ventures/research)
+- `src/app/(app)/recall/page.tsx`: daily recall session
 - `src/components/recall/recall-session.tsx`: typed answer, reveal, Again/Hard/Good/Easy
+- `src/app/actions/recall.ts`: queue load, rating, session progress event
+- `src/components/similar/similar-client.tsx`: search/filter + master-detail neighbor comparison UI
 - `src/components/dashboard/video-dashboard.tsx`: unified home dashboard client (gamification row, in-flight cards, recent activity, recent videos interactions)
 - `src/components/dashboard/streak-card.tsx`: streak metric card
 - `src/components/dashboard/weekly-summary.tsx`: rolling 7-day event and XP summary card
 - `src/components/dashboard/activity-heatmap.tsx`: 84-day GitHub-style activity heatmap
-- `src/components/videos/videos-client.tsx`: searchable/filterable videos grid
+- `src/components/videos/videos-client.tsx`: searchable/filterable videos list grouped by category color; search matches title + summary + remember + concepts
+- `src/components/videos/video-reference-card.tsx`: per-video reference card with category tint/left bar (full summary always visible; remember/questions/takeaways behind `<details>`)
 - `src/components/courses/add-course-form.tsx`: quick add form for course metadata and module target
 - `src/components/courses/course-card.tsx`: per-course progress card with inline module controls
 - `src/components/courses/courses-client.tsx`: searchable/filterable courses view with optimistic updates
@@ -369,12 +385,21 @@ Optional script-specific:
 - `scripts/seed-get-smarter.ts`: seeded ingest using YouTube search API
 - `scripts/backfill-categories.ts`: recategorize `"General"` videos by title heuristics
 - `scripts/backfill-obsidian-notes.ts`: push learned-video notes through the Local REST API
+- `scripts/export-obsidian-knowledge-vault.ts`: filesystem export of every video into an Obsidian vault (`summary` + `What to remember` + discussion questions + concept/category wiki-link graph). Reads `--from-json` (hosted/local catalog dump) or defaults to `/tmp/learning-tracker-videos.json`; writes to `--vault` or `OBSIDIAN_VAULT_PATH`. Re-applies `data/vault-neighbors.json` and Obsidian graph color groups if present.
+- `scripts/obsidian-graph-colors.ts`: Graph view color-group queries + `applyGraphColorGroups`
+- `scripts/apply-obsidian-graph-colors.ts`: CLI to restore Groups without rewriting notes (`npx tsx --tsconfig tsconfig.json scripts/apply-obsidian-graph-colors.ts`)
+- `scripts/obsidian-local-enrichment.ts`: thin wrapper over `buildVideoReference` for vault export
+- `scripts/obsidian-vault-types.ts`: `VideoRow` / `GeneratedNote` (includes `remember`)
+- `scripts/obsidian-note-parse.ts`: vault video-note frontmatter/section parser
+- `scripts/text-embeddings.ts`: cosine / L2 / top-k + MiniLM or hash embedder
+- `scripts/obsidian-neighbors.ts`: marked `## Similar (embeddings)` upsert + disagreement hub
+- `scripts/embed-vault-neighbors.ts`: CLI (`npm run obsidian:embed`)
 - `data/get-smarter-videos.json`: seed input dataset
 
 ### Infra/config
 - `prisma/schema.prisma`: schema definition (Video/VideoNote/RecallCard/RecallAttempt/ProgressEvent/Streak/Course/CourseModule/Project/Milestone/Venture/ResearchTopic)
 - `prisma/migrations/*`: migration history
-- `next.config.ts`: image host allowlist + turbopack root
+- `next.config.ts`: image host allowlist + turbopack root + `distDir` (local Darwin Desktop/Documents uses `~/Library/Caches/learning-tracker-next` so iCloud file-provider sync cannot stall `next dev`; override with `NEXT_DIST_DIR`, Vercel/CI stay `.next`)
 - `eslint.config.mjs`, `postcss.config.mjs`, `tsconfig.json`: toolchain configuration
 
 ## 8) Operational Notes
@@ -383,6 +408,9 @@ Optional script-specific:
 - Non-local database targets default to SSL unless `sslmode=disable`.
 - Connection pool max defaults to `connection_limit` URL param or `10`.
 - Image optimization is restricted to YouTube thumbnail host patterns.
+- **Local `next dev` on iCloud Desktop:** Next prints `Ready` as soon as the HTTP socket listens, then `initialize()` writes the compile cache. If `.next` is under iCloud (`brctl` "needs-sync" / unclean items), those writes never finish, `handlersPromise` never resolves, and the browser hangs with 0 bytes. `next.config.ts` relocates `distDir` off iCloud for local macOS Desktop/Documents checkouts.
+
+Pedagogical note: `listen()` accepting a TCP connection is not the same as the request handler being installed. Next resolves a `handlersPromise` only after the bundler cache is on disk. A network filesystem (iCloud file provider) can complete the TCP handshake and still leave the accept-path waiting on `write()`, which looks like a hung page with an empty response.
 
 ## 9) Testing and Validation Checklist
 

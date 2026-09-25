@@ -10,13 +10,16 @@ It is built with Next.js, Prisma, and PostgreSQL (Supabase), with optional YouTu
 - Assign a category when saving (`Programming`, `Business`, etc.)
 - Mark videos as learned with a toggle. That stores a study note and three recall cards
 - Review those ideas on `/recall`: type an answer, reveal the note, then rate Again / Hard / Good / Easy. Due cards are mixed across topics, and weaker ratings come back sooner
-- Browse all saved videos on `/videos` with search + category filters
+- Browse all saved videos on `/videos` grouped by category color, with search, filters, and a reference summary you can study later (expand for remember / questions / takeaways)
 - Track courses on `/courses` with module progress bars, status, and inline +/- progress controls
 - Manage coding projects on `/projects` with status lanes and milestone checkoffs
 - Track ventures on `/ventures` with stage transitions and one key metric
 - Track research topics on `/research` with phase progression and notes links
 - Show a unified home dashboard with streak/weekly stats, in-flight entities, recent cross-entity activity, and recent videos
 - Sync videos from a configured YouTube playlist into the database
+- Export each video into Obsidian as a note with a reference summary, what-to-remember bullets, discussion questions, and wiki-link knowledge graph (`npm run obsidian:vault`)
+- Embed those notes and attach nearest-neighbor “Similar” links (`npm run obsidian:embed`)
+- Browse embedding neighbors vs wiki-link related videos on `/similar`
 
 ## Tech stack
 
@@ -61,6 +64,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+If the terminal says **Ready** but the browser never loads, the project is likely on **iCloud Desktop/Documents**. Next writes its compile cache to `~/Library/Caches/learning-tracker-next` in that case so iCloud does not block the server. Override with `NEXT_DIST_DIR` if needed.
+
 ## YouTube sync setup
 
 Run OAuth once to get a refresh token:
@@ -90,7 +95,10 @@ Sync walks the playlist from the start up to a limit (default **2000** entries) 
 - `npm run db:generate` - generate Prisma client
 - `npm run db:studio` - open Prisma Studio
 - `npm run seed:get-smarter` - seed sample learning videos
-- `npm run test:recall` - unit tests for recall intervals and topic mixing
+- `npm run obsidian:vault -- --from-json=/tmp/learning-tracker-videos.json` - write video notes (reference summary, what to remember, discussion questions, concept graph) into an Obsidian vault. Add `--llm` only if Anthropic credits are available.
+- `npm run test:reference` - unit tests for title→study-card summaries
+- `npm run obsidian:graph-colors` - restore Obsidian Graph color groups (Programming blue, Science green, Business cyan, …). Quit Obsidian with Cmd+Q first or it will overwrite the file.
+- `npm run obsidian:embed` - embed video notes (MiniLM) and write nearest neighbors into each note plus `Learning Tracker/Embedding Neighbors.md`. Use `--hash` for a no-download fallback.
 
 ## Project structure (high-level)
 
@@ -100,7 +108,7 @@ Sync walks the playlist from the start up to a limit (default **2000** entries) 
 - `src/app/(app)/projects/page.tsx` - projects board with milestone workflows
 - `src/app/(app)/ventures/page.tsx` - ventures page with stage + key metric updates
 - `src/app/(app)/research/page.tsx` - research topics page with phase updates
-- `src/app/(app)/recall/page.tsx` - daily recall session for learned videos
+- `src/app/(app)/similar/page.tsx` - embedding nearest-neighbor explorer
 - `src/components/dashboard/*` - unified dashboard UI (streak, heatmap, in-flight entities, recent activity, recent videos)
 - `src/components/videos/*` - videos page client UI
 - `src/components/courses/*` - courses page client UI

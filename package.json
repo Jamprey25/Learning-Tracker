@@ -17,6 +17,12 @@
     "seed:get-smarter": "tsx --tsconfig tsconfig.json scripts/seed-get-smarter.ts",
     "categories:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-categories.ts",
     "obsidian:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-obsidian-notes.ts",
+    "obsidian:vault": "tsx --tsconfig tsconfig.json scripts/export-obsidian-knowledge-vault.ts",
+    "obsidian:embed": "tsx --tsconfig tsconfig.json scripts/embed-vault-neighbors.ts",
+    "obsidian:graph-colors": "tsx --tsconfig tsconfig.json scripts/apply-obsidian-graph-colors.ts",
+    "test:embeddings": "npx tsx --tsconfig tsconfig.json tests/text-embeddings.test.ts",
+    "test:similar": "npx tsx --tsconfig tsconfig.json tests/vault-neighbors.test.ts",
+    "test:reference": "npx tsx --tsconfig tsconfig.json tests/video-reference.test.ts",
     "test:recall": "npx tsx --tsconfig tsconfig.json tests/recall-schedule.test.ts"
   },
   "dependencies": {

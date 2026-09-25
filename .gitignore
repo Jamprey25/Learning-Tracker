@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# local embedding vectors (large)
+/data/vault-embeddings.json
+# neighbor scores are small and useful to keep; ignore only the dense vectors

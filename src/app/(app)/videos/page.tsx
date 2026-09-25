@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Film, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { Film, GitFork, Sparkles } from "lucide-react";
 
 import { listVideos } from "@/app/actions/video";
 import { VideosClient } from "@/components/videos/videos-client";
@@ -19,8 +20,16 @@ export default async function VideosPage() {
           <Sparkles className="size-5 text-fuchsia-300" aria-hidden />
         </div>
         <p className="mt-2 text-sm text-zinc-300">
-          Browse and filter everything from What IV&apos;s Watching.
+          Browse reference summaries you can study later — expand any card for
+          what to remember, retrieval questions, and takeaways.
         </p>
+        <Link
+          href="/similar"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm text-cyan-300 underline-offset-4 hover:underline"
+        >
+          <GitFork className="size-3.5" aria-hidden />
+          Open embedding neighbors
+        </Link>
       </div>
       <VideosClient initialVideos={videos} />
     </div>
