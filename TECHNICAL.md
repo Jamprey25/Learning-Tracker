@@ -1,6 +1,6 @@
 # Learning Tracker - Technical Structure
 
-Last updated: 2026-05-25
+Last updated: 2026-09-24
 
 ## 1) System Overview
 
@@ -44,6 +44,23 @@ Primary model (`prisma/schema.prisma`):
   - `category: String` default `"General"`
   - `isLearned: Boolean` default `false`
   - `createdAt: DateTime` default `now()`, mapped to `created_at`
+  - optional `VideoNote` and `RecallCard[]`
+
+- `VideoNote` (`video_notes`)
+  - one row per video (`videoId` unique, cascade delete)
+  - `summary: String`
+  - `takeaways: String[]`
+  - `concepts: String[]`
+  - written when a video flips to learned, from Claude when `ANTHROPIC_API_KEY` is set, otherwise from `buildVideoReference`
+
+- `RecallCard` (`recall_cards`)
+  - three rows per learned video, unique on `(videoId, kind)` where `kind` is `mechanism` | `failure` | `connection`
+  - `prompt`, `answer` (grounded in the stored note), `concept`
+  - schedule: `intervalDays`, `dueAt`, `lastRating`, `lastReviewedAt`
+  - cards are created once; later learned toggles refresh the note but do not rewrite existing cards
+
+- `RecallAttempt` (`recall_attempts`)
+  - one row per rating: `rating` (`again` | `hard` | `good` | `easy`), optional typed `response`, `reviewedAt`
 
 Additional gamification models:
 
@@ -142,7 +159,16 @@ Key invariants:
 ### 4.2 Learned Toggle Flow
 1. Client sets optimistic `isLearned` state.
 2. Server action `setVideoLearned` updates DB row.
-3. On failure, UI reverts optimistic state.
+3. On `false -> true`, `persistLearnedRecall` upserts `VideoNote`, creates three `RecallCard` rows if the video has none, and writes the Obsidian note when both API keys exist.
+4. On failure, UI reverts optimistic state.
+
+### 4.2b Recall session
+1. `/recall` loads `getRecallQueue`. Learned videos that have no recall cards yet are backfilled from `buildVideoReference` (no Claude call) so videos marked learned before this feature still enter the queue.
+2. Due cards (`dueAt <= now`, video still learned) are interleaved by `concept` and capped at 5.
+3. If none are due, the queue is the single card with the oldest `lastReviewedAt` (nulls first) so a cold library still gets one neglected idea.
+4. The client collects a typed answer (or an explicit "I don't remember"), then `revealRecallAnswer` loads the stored answer. The queue payload does not include it.
+5. `submitRecallRating` updates `intervalDays` and `dueAt` and inserts a `RecallAttempt` in one transaction. Schedule: Again = 1 day, Hard shrinks (`round(base * 0.6)`, floor 1), Good doubles, Easy multiplies by 3.5. A new card's base is 1 day.
+6. After the last card, `completeRecallSession` writes one `ProgressEvent` with `entityType: "recall"`, `eventType: "reviewed"`, `xp` equal to the card count, and a note used as the dashboard title.
 
 ### 4.3 Playlist Sync Flow
 1. Triggered from dashboard action or secured API endpoint.
@@ -167,7 +193,8 @@ Key invariants:
 ### 4.5 Video Progress Event Emission
 1. `ingestYoutubeVideo` emits `saved` events (`xp: 1`) on successful inserts.
 2. `setVideoLearned` emits `completed` events (`xp: 5`) only on `false -> true` transitions.
-3. `true -> false` toggles intentionally do not emit any progress event.
+3. A finished recall session emits one `recall` / `reviewed` event (`xp` = cards rated). It does not emit per card.
+4. `true -> false` toggles intentionally do not emit any progress event.
 
 ### 4.6 Bulk URL Import Flow
 1. `scripts/push-links-from-file.mjs` reads URL list from a text file.
@@ -222,6 +249,12 @@ Key invariants:
 2. Recent `ProgressEvent` rows are hydrated with entity titles by grouping IDs by `entityType` and bulk-loading names/titles from each domain table.
 3. The helper returns `HydratedProgressEvent[]` (`ProgressEvent` + `entityTitle` + `relativeTimeLabel`) so UI rendering can describe activity without additional per-row lookups.
 
+### 4.15 Local study cards
+1. When Claude is unavailable, `persistLearnedRecall` builds the stored note with `buildVideoReference`.
+2. `TOPIC_RULES` is an ordered list of regex → study-card templates. The first match writes the summary; later matches still contribute concepts.
+
+Pedagogical note: this is a **production-rule system** (ordered pattern → structured record), not a language model. Specificity ordering is the invariant — a general rule after a specific one is the difference between a useful mental model and a generic blurb.
+
 ## 5) External Integrations
 
 - Google OAuth token endpoint:
@@ -262,6 +295,8 @@ Required for secured route/script automation:
 Optional script-specific:
 - `IMPORT_BASE_URL` (defaults to `http://localhost:3000`)
 - `YOUTUBE_API_KEY` (seed script only)
+- `ANTHROPIC_API_KEY` — study-note generation for Obsidian export / learned-video notes
+- `OBSIDIAN_API_KEY`, `OBSIDIAN_BASE_URL`, `OBSIDIAN_NOTES_FOLDER` — Local REST API path used by `src/lib/obsidian.ts`
 
 ## 7) Source Structure and Responsibilities
 
@@ -276,6 +311,7 @@ Optional script-specific:
 - `src/app/(app)/projects/page.tsx`: projects route, server-loaded list for status-board rendering
 - `src/app/(app)/ventures/page.tsx`: ventures route, server-loaded card list with stage and key metric editing
 - `src/app/(app)/research/page.tsx`: research route, server-loaded topic list with phase progression
+- `src/app/(app)/recall/page.tsx`: daily recall session
 
 ### Actions and API
 - `src/app/actions/video.ts`: list + update learned state + learned completion event emission
@@ -283,6 +319,7 @@ Optional script-specific:
 - `src/app/actions/project.ts`: list/add/update project status + milestone lifecycle actions with XP emission
 - `src/app/actions/venture.ts`: list/add ventures + stage/metric updates with XP emission
 - `src/app/actions/research.ts`: list/add research topics + phase updates with XP emission
+- `src/app/actions/recall.ts`: queue load, rating, session progress event
 - `src/app/actions/youtube.ts`: URL save server action
 - `src/app/actions/sync.ts`: dashboard sync action orchestration
 - `src/app/api/sync/youtube/route.ts`: secured sync endpoint (cron/script-safe)
@@ -302,9 +339,15 @@ Optional script-specific:
 - `src/lib/categories.ts`: category taxonomy + badge color mapping
 - `src/lib/infer-category.ts`: keyword-based category inference heuristic
 - `src/lib/utils.ts`: UI utility helpers
+- `src/lib/obsidian.ts`: Claude study-note generation (`generateStudyNote`) and Local REST API PUT (`writeObsidianNote`). `createObsidianNote` is both, used by the backfill script
+- `src/lib/recall-schedule.ts`: interval math, concept interleave, and the three card drafts
+- `src/lib/recall.ts`: persist note + cards on learned, load the due/neglected queue, apply a rating
+- `src/lib/video-reference.ts`: title→study-card composer (`summary`, `remember`, questions, takeaways, concepts)
+- `src/lib/video-reference-rules.ts`: specific-to-general topic rules that drive local reference notes
 
 ### UI components
-- `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/courses/projects/ventures/research)
+- `src/components/layout/app-nav.tsx`: top navigation bar (home/videos/recall/courses/projects/ventures/research)
+- `src/components/recall/recall-session.tsx`: typed answer, reveal, Again/Hard/Good/Easy
 - `src/components/dashboard/video-dashboard.tsx`: unified home dashboard client (gamification row, in-flight cards, recent activity, recent videos interactions)
 - `src/components/dashboard/streak-card.tsx`: streak metric card
 - `src/components/dashboard/weekly-summary.tsx`: rolling 7-day event and XP summary card
@@ -325,10 +368,11 @@ Optional script-specific:
 - `scripts/push-links-from-file.mjs`: bulk import from plain-text URLs
 - `scripts/seed-get-smarter.ts`: seeded ingest using YouTube search API
 - `scripts/backfill-categories.ts`: recategorize `"General"` videos by title heuristics
+- `scripts/backfill-obsidian-notes.ts`: push learned-video notes through the Local REST API
 - `data/get-smarter-videos.json`: seed input dataset
 
 ### Infra/config
-- `prisma/schema.prisma`: schema definition (Video/ProgressEvent/Streak/Course/CourseModule/Project/Milestone/Venture/ResearchTopic)
+- `prisma/schema.prisma`: schema definition (Video/VideoNote/RecallCard/RecallAttempt/ProgressEvent/Streak/Course/CourseModule/Project/Milestone/Venture/ResearchTopic)
 - `prisma/migrations/*`: migration history
 - `next.config.ts`: image host allowlist + turbopack root
 - `eslint.config.mjs`, `postcss.config.mjs`, `tsconfig.json`: toolchain configuration
@@ -348,7 +392,8 @@ After technical changes, verify:
 - DB access works (`DATABASE_URL` valid)
 - Add-video flow works (valid/invalid/duplicate URL cases)
 - Sync route returns expected auth and summary behavior
-- Learned toggle persists across reload
+- Learned toggle persists across reload and creates a note plus three recall cards on the first learned transition
+- `/recall` shows due cards, accepts a rating, and moves `dueAt` forward
 
 ## 10) Documentation Maintenance Rule
 

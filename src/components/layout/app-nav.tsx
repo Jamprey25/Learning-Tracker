@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   Beaker,
+  Brain,
   FolderKanban,
   GraduationCap,
   Lightbulb,
@@ -11,6 +12,7 @@ import {
 const links = [
   { href: "/", label: "Home", icon: Sparkles },
   { href: "/videos", label: "Videos", icon: Video },
+  { href: "/recall", label: "Recall", icon: Brain },
   { href: "/courses", label: "Courses", icon: GraduationCap },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/ventures", label: "Ventures", icon: Lightbulb },

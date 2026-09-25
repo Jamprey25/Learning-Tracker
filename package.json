@@ -16,7 +16,8 @@
     "push:links": "node scripts/push-links-from-file.mjs",
     "seed:get-smarter": "tsx --tsconfig tsconfig.json scripts/seed-get-smarter.ts",
     "categories:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-categories.ts",
-    "obsidian:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-obsidian-notes.ts"
+    "obsidian:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-obsidian-notes.ts",
+    "test:recall": "npx tsx --tsconfig tsconfig.json tests/recall-schedule.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",

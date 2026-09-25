@@ -20,8 +20,55 @@ model Video {
   category   String   @default("General")
   isLearned  Boolean  @default(false)
   createdAt  DateTime @default(now()) @map("created_at")
+  note       VideoNote?
+  recallCards RecallCard[]
 
   @@map("videos")
+}
+
+model VideoNote {
+  id        String   @id @default(uuid())
+  videoId   String   @unique @map("video_id")
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  summary   String
+  takeaways String[]
+  concepts  String[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("video_notes")
+}
+
+model RecallCard {
+  id             String          @id @default(uuid())
+  videoId        String          @map("video_id")
+  video          Video           @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  kind           String
+  prompt         String
+  answer         String
+  concept        String
+  intervalDays   Int             @default(0) @map("interval_days")
+  dueAt          DateTime        @default(now()) @map("due_at")
+  lastRating     String?         @map("last_rating")
+  lastReviewedAt DateTime?       @map("last_reviewed_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  attempts       RecallAttempt[]
+
+  @@unique([videoId, kind])
+  @@index([dueAt])
+  @@map("recall_cards")
+}
+
+model RecallAttempt {
+  id         String     @id @default(uuid())
+  cardId     String     @map("card_id")
+  card       RecallCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  rating     String
+  response   String?
+  reviewedAt DateTime   @default(now()) @map("reviewed_at")
+
+  @@index([cardId])
+  @@map("recall_attempts")
 }
 
 model ProgressEvent {

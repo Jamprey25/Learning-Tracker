@@ -3,7 +3,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { recordProgressEvent } from "@/lib/progress";
-import { createObsidianNote } from "@/lib/obsidian";
+import { persistLearnedRecall } from "@/lib/recall";
 
 export type DashboardVideo = {
   id: string;
@@ -77,9 +77,14 @@ export async function setVideoLearned(
       });
 
       try {
-        await createObsidianNote(video);
+        await persistLearnedRecall({
+          id,
+          title: video.title,
+          url: video.url,
+          category: video.category,
+        });
       } catch (err) {
-        console.warn("[setVideoLearned] Obsidian note creation failed:", err);
+        console.warn("[setVideoLearned] Recall note creation failed:", err);
       }
     }
 

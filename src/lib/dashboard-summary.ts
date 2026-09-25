@@ -127,7 +127,10 @@ function hydrateEvents(
 
   return events.map((event) => {
     const entityType = event.entityType as keyof EntityTitleTables;
-    const entityTitle = tables[entityType]?.get(event.entityId) ?? null;
+    const entityTitle =
+      event.entityType === "recall"
+        ? event.note ?? "Recall"
+        : tables[entityType]?.get(event.entityId) ?? null;
     return { ...event, entityTitle, relativeTimeLabel: toRelativeTimeLabel(event.occurredAt) };
   });
 }

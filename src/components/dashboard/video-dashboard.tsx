@@ -172,6 +172,7 @@ export function VideoDashboard({
     if (event.eventType === "completed") return "completed";
     if (event.eventType === "shipped") return "shipped";
     if (event.eventType === "saved") return "saved";
+    if (event.eventType === "reviewed") return "reviewed";
     if (event.eventType === "progressed") return "made progress";
     return event.eventType.replaceAll("_", " ");
   }

@@ -8,7 +8,8 @@ It is built with Next.js, Prisma, and PostgreSQL (Supabase), with optional YouTu
 
 - Save YouTube videos by URL (title + thumbnail are fetched automatically)
 - Assign a category when saving (`Programming`, `Business`, etc.)
-- Mark videos as learned with a toggle
+- Mark videos as learned with a toggle. That stores a study note and three recall cards
+- Review those ideas on `/recall`: type an answer, reveal the note, then rate Again / Hard / Good / Easy. Due cards are mixed across topics, and weaker ratings come back sooner
 - Browse all saved videos on `/videos` with search + category filters
 - Track courses on `/courses` with module progress bars, status, and inline +/- progress controls
 - Manage coding projects on `/projects` with status lanes and milestone checkoffs
@@ -89,6 +90,7 @@ Sync walks the playlist from the start up to a limit (default **2000** entries) 
 - `npm run db:generate` - generate Prisma client
 - `npm run db:studio` - open Prisma Studio
 - `npm run seed:get-smarter` - seed sample learning videos
+- `npm run test:recall` - unit tests for recall intervals and topic mixing
 
 ## Project structure (high-level)
 
@@ -98,6 +100,7 @@ Sync walks the playlist from the start up to a limit (default **2000** entries) 
 - `src/app/(app)/projects/page.tsx` - projects board with milestone workflows
 - `src/app/(app)/ventures/page.tsx` - ventures page with stage + key metric updates
 - `src/app/(app)/research/page.tsx` - research topics page with phase updates
+- `src/app/(app)/recall/page.tsx` - daily recall session for learned videos
 - `src/components/dashboard/*` - unified dashboard UI (streak, heatmap, in-flight entities, recent activity, recent videos)
 - `src/components/videos/*` - videos page client UI
 - `src/components/courses/*` - courses page client UI

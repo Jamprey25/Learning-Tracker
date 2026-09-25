@@ -6,8 +6,9 @@ interface VideoInput {
   category: string;
 }
 
-interface GeneratedContent {
+export interface GeneratedContent {
   summary: string;
+  remember: string[];
   takeaways: string[];
   tags: string[];
   noteMarkdown: string;
@@ -92,6 +93,9 @@ function parseGeneratedContent(rawText: string): GeneratedContent | null {
       const summary =
         typeof parsed.summary === "string" ? parsed.summary.trim() : "";
       const takeaways = normalizeStringArray(parsed.takeaways).slice(0, 8);
+      const remember = normalizeStringArray(
+        (parsed as { remember?: unknown }).remember,
+      ).slice(0, 8);
       const tags = normalizeStringArray(parsed.tags)
         .slice(0, 8)
         .map((tag) => tag.toLowerCase().replace(/\s+/g, "-"));
@@ -106,7 +110,13 @@ function parseGeneratedContent(rawText: string): GeneratedContent | null {
         continue;
       }
 
-      return { summary, takeaways, tags, noteMarkdown };
+      return {
+        summary,
+        remember: remember.length > 0 ? remember : takeaways.slice(0, 5),
+        takeaways,
+        tags,
+        noteMarkdown,
+      };
     } catch {
       continue;
     }
@@ -131,6 +141,7 @@ Output ONLY valid JSON. No markdown. No code fences.
 
 Required keys:
 - "summary" (string)
+- "remember" (array of strings)
 - "takeaways" (array of strings)
 - "tags" (array of strings)
 - "note_markdown" (string)
@@ -168,23 +179,13 @@ function toWikiTarget(value: string): string {
   return value.replace(/[\[\]#|]/g, "").trim();
 }
 
-export async function createObsidianNote(video: VideoInput): Promise<boolean> {
+export async function generateStudyNote(
+  video: VideoInput,
+): Promise<GeneratedContent | null> {
   const anthropicKey = readTrimmedEnv("ANTHROPIC_API_KEY");
-  const obsidianKey = readTrimmedEnv("OBSIDIAN_API_KEY");
-  const obsidianBase = (
-    readTrimmedEnv("OBSIDIAN_BASE_URL") ?? "http://localhost:27123"
-  ).replace(/\/+$/, "");
-  const obsidianFolder = (
-    readTrimmedEnv("OBSIDIAN_NOTES_FOLDER") ?? "Notes"
-  ).replace(/^\/+|\/+$/g, "");
-
   if (!anthropicKey) {
-    console.warn("[obsidian] ANTHROPIC_API_KEY is not set — skipping note creation");
-    return false;
-  }
-  if (!obsidianKey) {
-    console.warn("[obsidian] OBSIDIAN_API_KEY is not set — skipping note creation");
-    return false;
+    console.warn("[obsidian] ANTHROPIC_API_KEY is not set — skipping note generation");
+    return null;
   }
 
   const client = new Anthropic({ apiKey: anthropicKey });
@@ -201,7 +202,8 @@ Video title: "${video.title}"
 Category: "${video.category}"
 
 Return ONLY valid JSON with these keys:
-- "summary": 2-3 punchy sentences. Lead with the core insight. What does understanding this actually unlock?
+- "summary": 5-8 sentences a future-you can study from without rewatching. Cover the core claim, the mechanism, named terms, the main caveat, and when to reuse the idea. Lead with the insight. No "In this video..."
+- "remember": 5-7 specific facts, definitions, or formulas you would look up later
 - "takeaways": 5-7 strings, each starting with an action verb. Specific and opinionated — "Prefer X over Y because...", "Never do Z when..."
 - "tags": 3-5 lowercase hyphenated tags
 - "note_markdown": Full Obsidian markdown using these conventions:
@@ -218,7 +220,7 @@ Return ONLY valid JSON with these keys:
     6. ## What To Study Next — 3 specific follow-up topics with a one-line reason each
 
 Example format:
-{"summary":"...","takeaways":["Prefer X over Y because..."],"tags":["..."],"note_markdown":"## The Core Idea\\n..."}`,
+{"summary":"...","remember":["Fact you would look up later"],"takeaways":["Prefer X over Y because..."],"tags":["..."],"note_markdown":"## The Core Idea\\n..."}`,
       },
     ],
   });
@@ -233,6 +235,26 @@ Example format:
     console.warn(
       `[obsidian] Failed to parse AI response as JSON — skipping note creation. Preview: ${preview || "<empty>"}`,
     );
+    return null;
+  }
+
+  return generated;
+}
+
+export async function writeObsidianNote(
+  video: VideoInput,
+  generated: GeneratedContent,
+): Promise<boolean> {
+  const obsidianKey = readTrimmedEnv("OBSIDIAN_API_KEY");
+  const obsidianBase = (
+    readTrimmedEnv("OBSIDIAN_BASE_URL") ?? "http://localhost:27123"
+  ).replace(/\/+$/, "");
+  const obsidianFolder = (
+    readTrimmedEnv("OBSIDIAN_NOTES_FOLDER") ?? "Notes"
+  ).replace(/^\/+|\/+$/g, "");
+
+  if (!obsidianKey) {
+    console.warn("[obsidian] OBSIDIAN_API_KEY is not set — skipping note creation");
     return false;
   }
 
@@ -241,6 +263,7 @@ Example format:
   const filename = `${slug}-${today}`;
 
   const frontmatter = formatFrontmatter(today, video.category, generated.tags);
+  const rememberLines = generated.remember.map((t) => `- ${t}`).join("\n");
   const takeawayLines = generated.takeaways.map((t) => `- ${t}`).join("\n");
   const deepDiveMarkdown =
     generated.noteMarkdown ||
@@ -268,6 +291,10 @@ Example format:
 ## Summary
 
 ${generated.summary}
+
+## What to remember
+
+${rememberLines}
 
 ## Key Takeaways
 
@@ -328,4 +355,10 @@ ${deepDiveMarkdown}
     console.warn("[obsidian] Failed to reach Obsidian REST API:", err);
     return false;
   }
+}
+
+export async function createObsidianNote(video: VideoInput): Promise<boolean> {
+  const generated = await generateStudyNote(video);
+  if (!generated) return false;
+  return writeObsidianNote(video, generated);
 }
