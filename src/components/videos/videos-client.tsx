@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState, useTransition } from "react";
-import { Search, CheckCircle2, Sparkles } from "lucide-react";
+import { Search, CheckCircle2, Clock, LayoutGrid, Sparkles } from "lucide-react";
 
 import { setVideoLearned, type DashboardVideo } from "@/app/actions/video";
 import { VideoReferenceCard } from "@/components/videos/video-reference-card";
@@ -10,6 +10,11 @@ import { CATEGORIES, categoryHeading, categoryPillIdle } from "@/lib/categories"
 import { buildVideoReference } from "@/lib/video-reference";
 
 const ALL = "All";
+
+type SortMode = "newest" | "category";
+
+const CARD_GRID =
+  "grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6";
 
 const PILL_ACTIVE: Record<string, string> = {
   All:         "border-white/30 bg-white/10 text-zinc-100",
@@ -30,6 +35,7 @@ export function VideosClient({ initialVideos }: Props) {
   const [videos, setVideos] = useState<DashboardVideo[]>(initialVideos);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState(ALL);
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
   const [isPending, startTransition] = useTransition();
 
   const handleLearnedChange = useCallback(
@@ -152,24 +158,58 @@ export function VideosClient({ initialVideos }: Props) {
         />
       </div>
 
-      {/* Category pills */}
-      <div className="flex flex-wrap gap-2">
-        {filterOptions.map((cat) => (
+      {/* Category pills + sort toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {filterOptions.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200",
+                activeCategory === cat
+                  ? (PILL_ACTIVE[cat] ?? "border-white/30 bg-white/10 text-zinc-100")
+                  : cat === ALL
+                    ? "border-white/10 bg-transparent text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200"
+                    : cn(categoryPillIdle(cat), "hover:brightness-125"),
+              )}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+        <div
+          role="group"
+          aria-label="Sort videos"
+          className="flex overflow-hidden rounded-full border border-white/10 bg-white/[0.04] text-xs font-medium"
+        >
           <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
+            onClick={() => setSortMode("newest")}
+            aria-pressed={sortMode === "newest"}
             className={cn(
-              "rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200",
-              activeCategory === cat
-                ? (PILL_ACTIVE[cat] ?? "border-white/30 bg-white/10 text-zinc-100")
-                : cat === ALL
-                  ? "border-white/10 bg-transparent text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200"
-                  : cn(categoryPillIdle(cat), "hover:brightness-125"),
+              "flex items-center gap-1.5 px-3 py-1.5 transition-colors",
+              sortMode === "newest"
+                ? "bg-white/10 text-zinc-100"
+                : "text-zinc-500 hover:text-zinc-300",
             )}
           >
-            {cat}
+            <Clock className="size-3.5" aria-hidden />
+            Newest
           </button>
-        ))}
+          <button
+            onClick={() => setSortMode("category")}
+            aria-pressed={sortMode === "category"}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 transition-colors",
+              sortMode === "category"
+                ? "bg-white/10 text-zinc-100"
+                : "text-zinc-500 hover:text-zinc-300",
+            )}
+          >
+            <LayoutGrid className="size-3.5" aria-hidden />
+            By category
+          </button>
+        </div>
       </div>
 
       {/* Reference list */}
@@ -179,6 +219,24 @@ export function VideosClient({ initialVideos }: Props) {
             ? "No videos match your filters."
             : "No videos yet. Add one from the dashboard."}
         </p>
+      ) : sortMode === "newest" ? (
+        <ul className={CARD_GRID}>
+          {filtered.map((video, index) => {
+            const study = studies.get(video.id);
+            if (!study) return null;
+            return (
+              <li key={video.id} className="min-w-0 list-none">
+                <VideoReferenceCard
+                  video={video}
+                  study={study}
+                  priority={index === 0}
+                  isPending={isPending}
+                  onLearnedChange={handleLearnedChange}
+                />
+              </li>
+            );
+          })}
+        </ul>
       ) : (
         <div className="space-y-8">
           {groups.map((group, groupIndex) => (
@@ -194,7 +252,7 @@ export function VideosClient({ initialVideos }: Props) {
                   {group.videos.length} {group.videos.length === 1 ? "video" : "videos"}
                 </span>
               </h2>
-              <ul className="space-y-4">
+              <ul className={CARD_GRID}>
                 {group.videos.map((video, index) => {
                   const study = studies.get(video.id);
                   if (!study) return null;

@@ -8,7 +8,7 @@ export default function AppLayout({
   return (
     <>
       <AppNav />
-      <div className="relative mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
+      <div className="relative mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 sm:px-6 sm:py-8">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
