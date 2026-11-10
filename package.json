@@ -17,16 +17,22 @@
     "seed:get-smarter": "tsx --tsconfig tsconfig.json scripts/seed-get-smarter.ts",
     "categories:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-categories.ts",
     "obsidian:backfill": "tsx --tsconfig tsconfig.json scripts/backfill-obsidian-notes.ts",
+    "obsidian:metadata": "tsx --tsconfig tsconfig.json scripts/fetch-video-metadata.ts",
+    "obsidian:transcripts": "tsx --tsconfig tsconfig.json scripts/fetch-transcripts.ts",
+    "recall:rebuild": "tsx --tsconfig tsconfig.json scripts/rebuild-recall-cards.ts",
     "obsidian:vault": "tsx --tsconfig tsconfig.json scripts/export-obsidian-knowledge-vault.ts",
     "obsidian:embed": "tsx --tsconfig tsconfig.json scripts/embed-vault-neighbors.ts",
     "obsidian:graph-colors": "tsx --tsconfig tsconfig.json scripts/apply-obsidian-graph-colors.ts",
     "test:embeddings": "npx tsx --tsconfig tsconfig.json tests/text-embeddings.test.ts",
     "test:similar": "npx tsx --tsconfig tsconfig.json tests/vault-neighbors.test.ts",
     "test:reference": "npx tsx --tsconfig tsconfig.json tests/video-reference.test.ts",
-    "test:recall": "npx tsx --tsconfig tsconfig.json tests/recall-schedule.test.ts"
+    "test:transcript": "npx tsx --tsconfig tsconfig.json tests/transcript-digest.test.ts",
+    "test:recall": "npx tsx --tsconfig tsconfig.json tests/recall-schedule.test.ts",
+    "test:recall-cards": "npx tsx --tsconfig tsconfig.json tests/recall-cards.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
+    "@huggingface/transformers": "^4.3.0",
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "@radix-ui/react-label": "^2.1.8",
